@@ -1,0 +1,150 @@
+from typing import Any, Dict, Optional
+from django import http
+from django.forms.models import BaseModelForm,  ModelForm
+from django.http import HttpRequest,JsonResponse
+from django.shortcuts import render, redirect
+from django.views.generic import FormView, RedirectView, TemplateView
+from django.urls import reverse_lazy, reverse
+from .models import PasswordGeneration
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .forms import PasswordGeneratorForm
+import json
+
+
+# Constants
+API_SERVICES = ['websterdictionary', 'websterthesaurus']
+APIKEYS_WEBSTER = {"thesuarus": "b86db3b6-5ec2-4c31-88dd-0e49c3b04aea", "dictionary": "27537b3c-670c-44fa-bfd9-5f917c2cb7e3"}
+#example of a functional api request
+    #https://dictionaryapi.com/api/v3/references/thesaurus/json/food?key=b86db3b6-5ec2-4c31-88dd-0e49c3b04aea
+
+# Create your views here.
+ 
+#this view displayes the generic password settings such as the minimum length, the words that are core , etc
+class PasswordGeneratorHomeView(TemplateView, LoginRequiredMixin):
+    template_name = 'PasswordGenerator/dictionary_home.html'
+    context_object_name = 'user_passwordgeneration_settings'
+    
+    
+    #include list of used words in context of template
+    def get_context_data(self, **kwargs: Any):
+        #Create/ and or get a users PasswordGeneration settings record
+        generator_result = PasswordGeneration.objects.get_or_create(owner=self.request.user,)
+        self.user_password_generator = generator_result[0]
+        context = super(PasswordGeneratorHomeView, self).get_context_data()
+        #print(self.user_password_generator.list_core_words())
+        userwords =  self.user_password_generator.list_core_words()
+        context['user_words'] =userwords
+        #print(self.view_core_list)
+        context['minimum_word_count'] = self.user_password_generator.minimum_words
+        context['generator'] = self.user_password_generator
+        return context
+              
+class UpdateDictionaryFormView(FormView, LoginRequiredMixin):
+    context_object_name = 'PasswordGenerator_context'
+    template_name = 'PasswordGenerator/dictionary_add.html'
+    form_class = PasswordGeneratorForm  
+    
+    #@ TODO - On Form Submission - Call methods on users PasswordGeneration object
+    def form_valid(self, form: Any):
+        password_generator = PasswordGeneration.objects.get(owner=self.request.user,)
+        # - check if user submitted word is can be added to core dictionary
+       
+        if password_generator.bCan_add_word(form.cleaned_data['word']):
+            #- if yes, call functions that add word to core dictionary
+            password_generator.update_dictionaries(form.cleaned_data['word'],APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'])
+            # Save changes 
+            password_generator.save()
+            # - if successful redirect user to password generator home page
+        else:
+            print('word already exists')
+            
+        self.success_url = reverse_lazy('generator_home', kwargs={'user': self.request.user.username})
+        return super().form_valid(form)
+class PasswordGeneratorDeleteWord(RedirectView, LoginRequiredMixin):
+    def get_redirect_url(self, *args: Any, **kwargs: Any):
+        self.url = reverse_lazy('generator_home', kwargs={'user': self.request.user.username})
+        #print(f'redirecting to {self.url}')
+        
+        print(f'delete_word called for {self.kwargs["word"]}')
+        # - check if user submitted word is can be added to core dictionary
+        password_generator = PasswordGeneration.objects.get(owner=self.request.user,)
+        password_generator.update_dictionaries(self.kwargs["word"],APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'], 'websterdictionary')
+        print(f'updated:list:{password_generator.list_core_words()}')
+       
+        return super().get_redirect_url(*args, **kwargs)
+class GeneratePasswordView(RedirectView, LoginRequiredMixin): 
+    def get_redirect_url(self, *args: Any, **kwargs: Any):
+        self.url = reverse_lazy('generator_home', kwargs={'user': self.request.user.username})
+        try:
+            #Generate a random password using the users password manager
+            password_generator = PasswordGeneration.objects.get(owner=self.request.user)
+            generated_password = password_generator.generate_string()
+            print(f'generated value: {generated_password}')
+            # store generated value in users session - this is shown on users home settings template
+            self.request.session['recent_password_generated'] = generated_password
+        except:
+            print('An error has occured while creating a password for user')
+        return super().get_redirect_url(*args, **kwargs)
+ 
+class TestPage(TemplateView):
+    template_name ='PasswordGenerator/Testing/testing.html'  
+class TestRedirect(RedirectView):
+    def get_redirect_url(self, *args: Any, **kwargs: Any):
+        self.url = reverse_lazy('testing_home', kwargs={'user':self.request.user.username})
+        print('Testing Redirect Called')
+        return super().get_redirect_url(*args, **kwargs)
+class TestAPIView(TemplateView):
+    """View that test api call - This variant test webster dictionary thesuarus for the word 'food' """
+    template_name ='PasswordGenerator/Testing/testingAPI.html'
+    
+    def get_context_data(self, **kwargs: Any):
+        #Test Dictionary Response
+        self.TESTWORD = 'Guard'
+        self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
+        #test dictionary response
+        #API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+        API_from_model = self.PasswordGenerator.get_API_request_json(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+        context = super(TestAPIView, self).get_context_data()
+
+        context['api_json_list_full'] = []
+        context['api_json_synonyms'] = []
+        context['api_json_antonyms'] = []
+        # if api call successful return nothing
+        if API_from_model:  
+            parsed_json_list = API_from_model
+            
+            #Testing - Accessing Dictionary data from response
+            #print(f"json response inner object dictionary {parsed_json_list[0]} \n")
+
+            print(f"\njson response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]} \n")
+            print(f"json response using 0, meta,ants as key {parsed_json_list[0]['meta']['ants']} \n")
+            
+            context['api_json_list_full'] = parsed_json_list 
+            if len(parsed_json_list[0]['meta']['syns']):
+                context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
+            if parsed_json_list[0]['meta']['ants']:
+                context['api_json_antonyms'] = parsed_json_list[0]['meta']['ants'][0]
+    
+        return context
+class TestFlushView(RedirectView, LoginRequiredMixin):
+    
+    def get_redirect_url(self, *args: Any, **kwargs: Any):
+        self.url = reverse_lazy('generator_home', kwargs={'user':self.request.user.username})
+        self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
+        print(f'Words being flushed: Core {self.PasswordGenerator.dictionaryCore} \n related: {self.PasswordGenerator.dictionaryRelated} ')
+        self.PasswordGenerator.flush_dictionaries()
+        print('Redirect for TestFlushView Called')
+        return super().get_redirect_url(*args, **kwargs)
+    
+class ReminderView(TemplateView):
+    #Views with templates use template_name to determine the html page that will be used
+    template_name ='PasswordGenerator/Testing/testing.html'
+    
+    # Almost all pages have a url or success_url member
+    
+    # access a model object by using the modelname.objects: this is a manager for the object
+    
+    # access a url variable by using self.kwargs['name'] 
+        #you can store values in cookies or sessions for permenant storage
+    
+     

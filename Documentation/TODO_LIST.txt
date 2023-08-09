@@ -1,0 +1,48 @@
+#0 - X
+    Implement Basic Securiy Functionality
+        Implement key field in UserManagement.user module
+            This unique 16-64 string key is automatically generated upon user registration and used to encrpyt and decrypt information
+        Create SecureConnection Mixin 
+
+#1
+    Implement encrpytion at rest
+        Create and use a custom encpytion field that stores byte data
+            field encrypts and decryptes based on value/key provided
+        Connect encrpytion to Each Users Data encrpyting their credentials using their master key
+
+#2  
+    Create Password Decrypt Functionality
+        System Authentication passwords are stored in hash form only
+        User credential passwords are  shown in their encrpyted forms until a user provides their decrpytion key to their detailview/homeview(javascript)
+            the passwords are decrpyted clientside 
+
+# Possibility: Replace Custom Credentail System with django-allauth - This should allow for a more streamlined development process _
+    https://medium.com/@royprins/django-custom-user-model-email-authentication-d3e89d36210f
+
+# 3 Enable functionality that stores the users key as a cookie that last until logout. i.e a user logs in and the cookie value is set.
+
+# 4 Create functionality in which user can choose which key they want to secure a set of credentials with, from the two provided upon registration      
+    # the user can use their secondary key to encrpyt credentials depending on a assigned group
+
+    # It may also be possible to change stored cookie value by interacting with a settings link while a user is authenticated
+
+
+# Security Core
+    # A: Setup Data at rest 
+        # All critical records and/or record fields are encrypted with server key
+            # for credential set, stored passwords are encypted instead by a users master key, provided upon registration, sent to user agent as cookie and used when accessing views that 
+                show that record.
+        # credentials are to be stored in a form encrpytped by server key w
+    # B: Setup data in transit
+        # All sessions are services over SSL_3 or TLS_2
+
+# Setup Single Sign On(SSO)Registration-Login
+    #Google
+    
+# Setup StrongPasswordApp
+    # This app enables password generation functionality, along with password strength checking.
+        # This app is to be used in relation to credentail checking 
+            # This app will have several dictionaries that allow for mix and matching of word types when creating
+                #passwords for human memorability. This choice is optional.
+        #@ Register For Webster - any dictionary service api :https://www.dictionaryapi.com/register/index for merian webster
+            # thesuarus provides related words

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %} Password Change {% endblock title %}
+{% block Body %}
+    <!--HomePage Markup-->
+   
+    <div>
+    <i class="fas fa-h3    ">Change Password Confirm Page</i>
+    </div>
+    <div>
+        <form method = 'post'> 
+            {% csrf_token %}
+            {{form.as_p}}
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+{% endblock Body %}
+
+{% block Foot %}
+
+{% endblock Foot %}

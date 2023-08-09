@@ -1,0 +1,74 @@
+    {% extends 'base.html' %}
+
+    {% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    {% endblock scripts %}
+    {% block javascript %}
+
+    {% endblock javascript %}
+    {% block content %}
+
+    {% block preferences_details %}
+        <i class="fas fa-h1 text-danger"> Welcome To Your Password Generation Settings</i> <br>
+        <i class="fas fa-h2 text-danger"> Minimum Length of Password: {{minimum_word_count}}</i><br>
+    {% endblock preferences_details %}
+{% block password_generation %}
+
+    <!--Block That handles creating and showing generated password-->
+<i class="fas fa-h2 text-danger"> Generate Password</i> <a name="" id="generator_button" class="btn btn-primary" href={% url 'generate_string' user.username %} role="button"></a>
+    {% if request.session.recent_password_generated %}
+    <i class="fas fa-h2 "> Recently Generated: {{request.session.recent_password_generated}}</i>
+    {% endif %}
+    <br>
+{% endblock password_generation %}
+
+    <!--Create a List of User Words(core words) currently in use-->
+    {% block Word_List %}
+    {% if user_words %}
+    <div id="UserCoreWords-List"> 
+        <ul>
+        {% for word in user_words %}
+            {% if word != '' %}
+            <div> 
+                <!--Define button that when clicked runs java script that automatically calls for function that submits a form to delete a word from users dictionary-->
+                <i class="fas fa-h2 text-danger"> {{word}}</i><a href = {% url "delete_word" user.username word %}> <button> Remove</button> </a>
+            </div>
+         {% endif %}
+        {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div id="UserCoreWords-List"> 
+        <i class="fas fa-h2 text-danger"> No Preferences Set - Lets Change That Shall We?</i>
+    </div>
+    {% endif %}
+    {% endblock Word_List %}
+
+    <!--Area that handles adding new words to users PasswordGenerator preferences-->
+    {% block AddWord %}
+    
+    <div id="UserAddWord"> 
+        <i class="fas fa-h2 text-danger"> <a href={% url 'generator_update' user.username generator.pk%}> Add A Word</a></i>
+    </div>
+    
+    {% endblock AddWord %}
+
+
+    {% block Testing %}
+    <br>
+    <div id="UserTestRedirect"> 
+        <i class="fas fa-h2 text-danger"> <a href={% url 'testing_redirect' user.username%}> Test Page</a></i>
+    </div>
+    <br>
+    <div id="UserTestAPI"> 
+        <i class="fas fa-h2 text-danger"> <a href={% url 'testing_api' user.username%}> Test API</a></i>
+    </div>
+    <br>
+    <div id="UserTestFlush"> 
+        <i class="fas fa-h2 text-danger"> <a href={% url 'testing_flush' user.username%}> Test Dictionary Flush</a></i>
+    </div>
+    <br>
+{% endblock Testing %}
+    {% endblock content %}
+

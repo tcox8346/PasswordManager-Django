@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block Title %} login Page {% endblock Title %}
+{% block Nav %}
+{% endblock Nav %}
+
+{% block Body %}
+    <form method = 'post'>
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+{% endblock Body %}
+
+{% block Foot %}
+
+<div> 
+    <nav>
+        <p> Already have an account? <h3> <a href = {% url 'signup' %}> Signup </a> </h3> </p>
+     </nav>
+</div>
+
+{% endblock Foot %}

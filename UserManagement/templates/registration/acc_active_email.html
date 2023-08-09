@@ -1,0 +1,9 @@
+{% autoescape off %}  
+Hi {{ user.username }},  
+Your MasterPassword is {{password}}, Be sure to keep this safe as it is used to login to your account.
+Your Decryption key is {{key}}.
+Please click on the link to confirm your registration,  
+http://{{ domain }}{% url 'activate_account' uidb64=uid token=token %}  
+<br>
+Upon registration you will have to create a password.
+{% endautoescape %}  

@@ -1,0 +1,8 @@
+When creating a base be sure to include a favicon to prevent favicon errors. This fixed "ValueError: Field 'id' expected a number but got 'favicon.ico'"
+
+Use model managers , ie "ModelClass.objects..." to access objects and their attributes/methods
+
+When setting up or using any for of email interaction be sure to reference email information guides found in info.txt.
+
+To fix issues that come from url passing desired object instead of pk ..ie "ValueError: Field 'id' expected a number but got 'JackSmack'." modify the model field that is being refernced by the view and/or url via enhancement
+    to_field="".
