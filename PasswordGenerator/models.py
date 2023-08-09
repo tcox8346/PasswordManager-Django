@@ -85,158 +85,185 @@ class PasswordGeneration(models.Model):
     def update_dictionaries(self, new_word:str, API_Key_Dictionary:str, API_Key_Thesaurus:str, API_Service:str ='websterdictionary', API_Service_Helper = 'websterthesaurus' , b_remove = False):
         """Update user password generator model dictionary values- only functions with single words"""
         bword_can_be_added = self.bCan_add_word(new_word)
+        api_dictionary_json = None
         if b_remove == False and bword_can_be_added:
             try:
                 #determine if word exists
                 api_dictionary_json:list|None = self.get_API_request_json(API_Service, new_word, API_Key_Dictionary)
             except Exception:
-                print("An Error has ouccred during the proccess of getting the API request")
+                print("An Error has occured during the proccess of getting the API request")
                 return
         
-        # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
-        if api_dictionary_json:
-            core_words = self.list_core_words()
-            core_words.append(new_word) 
-            #Add related words to related dictionary
-            try: 
-                # get api response for words related to the new word
-                api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
-                
-                if api_thesuraus_json:  
-                    # create list of found related words                    
-                    try:
-                        collection_of_antonyms = []
-                            #if list containing antynoyms of word exists; add words to related words
-                        if len(api_thesuraus_json[0]['meta']['ants']) > 0:
+            # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
+            if 'meta' in api_dictionary_json[0]:
+                core_words = self.list_core_words()
+                core_words.append(new_word) 
+                #Add related words to related dictionary
+                try: 
+                    # get api response for words related to the new word
+                    api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
+                    
+                    if api_thesuraus_json:  
+                        # create list of found related words                    
+                        try:
+                            collection_of_antonyms = []
+                                #if list containing antynoyms of word exists; add words to related words
+                            if len(api_thesuraus_json[0]['meta']['ants']) > 0:
+                                
+                                if type(api_thesuraus_json[0]['meta']['ants']) == list:
+                                    for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
+                                        #if word in antynyms not blank add to possible words 
+                                        if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
+                                            collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
+                                else:
+                                    print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
+                                
+                                
+                        except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
+                            raise Exception
                             
-                            if type(api_thesuraus_json[0]['meta']['ants']) == list:
-                                for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
-                                    #if word in antynyms not blank add to possible words 
-                                    if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
-                                        collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
-                            else:
-                                print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
-                            
-                            
-                    except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
-                        raise Exception
+                        try:
+                            collection_of_synonyms = []
+                                #if list containing synonyms of word exists add words to related words
+                            if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
+                                if type(api_thesuraus_json[0]['meta']['syns']) == list:
+                                    for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
+                                        if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
+                                            collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
+                                        
+                            #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
+                        except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
+                            raise Exception
                         
-                    try:
-                        collection_of_synonyms = []
-                            #if list containing synonyms of word exists add words to related words
-                        if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
-                            if type(api_thesuraus_json[0]['meta']['syns']) == list:
-                                for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
-                                    if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
-                                        collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
-                                    
-                        #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
-                    except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
-                        raise Exception
-                    
-                else:
-                    print('No json response for thesuarus of provided word found')
-                    
-            except Exception:
-                print('An error has occured while defining thesuarus values')
-                return
-            
-        #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
-        try:
-            # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
-            API_response_related_words = collection_of_antonyms + collection_of_synonyms
-            free_random_words = []
-            related_words = self.list_related_words()
-            
-            for word_index in range(len(API_response_related_words)):
-                #if word exists in either set of used words or is blank skip it
-                if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
-                    continue
-                free_random_words.append(API_response_related_words[word_index]) 
-                
-            # Remove words with blank spaces present
-            free_random_words_no_spaces = []
-            for word in free_random_words:
-                if " " in word:
-                    continue
-                free_random_words_no_spaces.append(word)
-            #remove trailing , from word
-            for word_index in range(len(free_random_words_no_spaces)):
-                free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
-            
-            free_random_words = free_random_words_no_spaces
-            # if the list of words that can be added is greater then 0
-            chosen_words = []
-            if len(free_random_words) > 0:
-               
-                #select  up to 3 random words from the list, take them from the list and add them to desired related words to append
-                for i in range(3):
-                    if len(free_random_words) == 0:
-                        break
-                    random_selection = randint(0, len(free_random_words))
-                    chosen_words.append(free_random_words.pop(random_selection))
-                
-                #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
-                for word in chosen_words:
-                    if word == '' or word in related_words:
-                        continue
-                    related_words.append(word)
-                    self.dictionaryRelated += word + ','
-                
-                
-                #if core words is empty assign new was as initial core word, otherwise append new core word to core words
-                if self.dictionaryCore == '':
-                    self.dictionaryCore = core_words[0]
-                else:         
-                    #convert new corewords list into csv
-                    new_core_words_csv = ''
-                    for word in core_words:
-                        new_core_words_csv += word + ','
-                    #assign new cord word csv to dictionare core
-                    self.dictionaryCore = new_core_words_csv
-                self.save()
-                return
-
-            else:
-                print('No words could be added to related words: found to all exists already')
-                
-        except Exception:
-            print('An error has occured while correcting the users dictionaries')
-            return
-        
-        #if the purpose is to remove a word and its related words from the dictionary
-        else:
-            # start process only if word exists in users core words
-            core_words = self.list_core_words()
-            if new_word in core_words:
-                try:
-                    #determine if word exists in global dictionary
-                    api_dictionary_json = self.get_API_request_json(API_Service, new_word, API_Key_Dictionary)
-                    
+                    else:
+                        print('No json response for thesuarus of provided word found')
+                        
                 except Exception:
-                    print("An Error has ocurred during the proccess of getting the API request")
+                    print('An error has occured while defining thesuarus values')
                     return
-                
-                #if the word doesnt exist as a standard word in the english dicitonary - remove the word from core and return
-                if api_dictionary_json == None:
-                    self.b_remove_word(list[new_word])
+                   
+                #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
+                try:
+                    # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
+                    API_response_related_words = collection_of_antonyms + collection_of_synonyms
+                    free_random_words = []
+                    related_words = self.list_related_words()
+                    
+                    for word_index in range(len(API_response_related_words)):
+                        #if word exists in either set of used words or is blank skip it
+                        if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
+                            continue
+                        free_random_words.append(API_response_related_words[word_index]) 
+                        
+                    # Remove words with blank spaces present
+                    free_random_words_no_spaces = []
+                    for word in free_random_words:
+                        if " " in word:
+                            continue
+                        free_random_words_no_spaces.append(word)
+                    #remove trailing , from word
+                    for word_index in range(len(free_random_words_no_spaces)):
+                        free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
+                    
+                    free_random_words = free_random_words_no_spaces
+                    # if the list of words that can be added is greater then 0
+                    chosen_words = []
+                    if len(free_random_words) > 0:
+                    
+                        #select  up to 3 random words from the list, take them from the list and add them to desired related words to append
+                        for i in range(3):
+                            if len(free_random_words) == 0:
+                                break
+                            random_selection = randint(0, len(free_random_words))
+                            chosen_words.append(free_random_words.pop(random_selection))
+                        
+                        #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
+                        for word in chosen_words:
+                            if word == '' or word in related_words:
+                                continue
+                            related_words.append(word)
+                            self.dictionaryRelated += word + ','
+                        
+                        
+                        #if core words is empty assign new was as initial core word, otherwise append new core word to core words
+                        if self.dictionaryCore == '':
+                            self.dictionaryCore = core_words[0]
+                        else:         
+                            #convert new corewords list into csv | and store in dictionary core                 
+                            self.dictionaryCore = self.convert_to_csv(core_words)
+                        self.save()
+                        return
+
+                    else:
+                        print('No words could be added to related words: found to all exists already')
+                        
+                except Exception:
+                    print('An error has occured while correcting the users dictionaries')
                     return
+            else:
+                print('Custom Word support is currently not functional')
+            return 
+        # Otherwise, if the goal is to remove a word from core 
+        else:
+            #get current list of related words
+            current_related = self.list_related_words()
+            
+            # get all synonyms and antonyms of word
+            api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper,new_word,API_Key_Thesaurus)
+            if api_thesuraus_json is not None:  
                 
-                # if word exists in api dictionary , (this function assumes a validity check has been completed)
-                related_words_query = self.get_API_request_json(API_Service,new_word,API_Key_Thesaurus)
-                API_response_related_words = []
+                # create list of found antonyms                    
+                collection_of_antonyms = []
+                try:
+                        #if list containing antynoyms of word exists; add words to related words
+                    if len(api_thesuraus_json[0]['meta']['ants']) > 0:
+                        
+                        if type(api_thesuraus_json[0]['meta']['ants']) == list:
+                            for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
+                                #if word in antynyms not blank add to possible words 
+                                if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
+                                    collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
+                        else:
+                            print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
+                            
+                except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
+                    raise Exception
+                # create list of found synonyms    
+                collection_of_synonyms = []
+                try:
+                    #if list containing synonyms of word exists add words to related words
+                    if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
+                        if type(api_thesuraus_json[0]['meta']['syns']) == list:
+                            for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
+                                if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
+                                    collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
+                                
+                except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
+                    raise Exception
+
+                # remove words from related that are in list of synonyms and antonyms
+                new_related = []
+                for word in current_related:
+                    # if word is in synonyms or antonyms list
+                    if word in collection_of_antonyms or word in collection_of_synonyms:
+                        continue
+                    #exclude target word from models core word - List
+                    new_related.append(word)
+                    
+                #convert result into csv form and set models related value to it
+                self.dictionaryRelated = self.convert_to_csv(new_related)
                 
-                
-                
-                for word in related_words_query[0]['meta']['ants']:
-                    API_response_related_words += word
-                for word in related_words_query[0]['meta']['syns']:
-                    API_response_related_words += word
-                #remove words from user dictionaries
-                self.b_remove_word(new_word, 'core')
-                self.b_remove_word(API_response_related_words)
-        
-        return 
+                #remove word from models core word csv and set model core to new list 
+                new_core = []
+                for word in self.list_core_words():
+                    if new_word in word:
+                        continue
+                    new_core.append(word)
+                self.dictionaryCore = self.convert_to_csv(new_core)
+                #save result
+                self.save()
+        return
+                                                   
     #@ Confirm if word can be added to dictionary core- size check and existence check
     def bCan_add_word(self, newWord):
         """Returns true if word not found in dictionary core"""
@@ -252,50 +279,21 @@ class PasswordGeneration(models.Model):
         # otherwise return false
         return False
     #@ Remove the target word from users dictionaries
-    def b_remove_word(self,target_words:list, target_dictionary:str = 'related'):
-        try:
-            if target_dictionary=="related":
-                dictionary = self.dictionaryRelated
-            else:
-                dictionary = self.dictionaryCore
-        except Exception :
-            print('Unable to assign dictionarys ')
-            return False
-        
-        try:
-            #determine if word exists in dictionary
-            str_list = re.split(value_seperator, dictionary)
-            for word in str_list:
-                if word not in str_list:
-                    print('Word does not currently exists in list, cannot be removed')
-                    return 
-        
-                
-            #@ Remove a word/list of words from the dictionary in csv form 
-            #create output placeholder
-            output_dictionary = ''
-            # Create a list based on the provided csv string using regular expressions
-            value_seperator = ','
-            
-            # populate a new string- output - with each element of the split list,, excluding the words targeted
-            for word in str_list:
-                if word in target_words or word == '':
-                    continue
-                output_dictionary + word + ',' # this value is the newest iteration of the dictionary
-            if dictionary == self.dictionaryRelated and self.dictionaryCore != self.dictionaryRelated:
-                self.dictionaryRelated = output_dictionary
-            elif dictionary == self.dictionaryCore and self.dictionaryCore != self.dictionaryRelated:
-                self.dictionaryCore = output_dictionary
-        except Exception : 
-            print('An error has occured while removing word')
-            return False
+    def remove_word(self,word,dictionary):
+        pass
     #@ Select a set number of words from related dictionary
     def select_related_words(self, word_count):
         dictionary_list = re.split(',', self.dictionaryRelated)
         selected_words = []
         for i in range(word_count):
             selected_words += dictionary_list[randint(0, len(dictionary_list))]
-        return selected_words    
+        return selected_words 
+    def convert_to_csv(self,list_of_words):
+        #convert new corewords list into csv
+        new_csv:str = ''
+        for word in list_of_words:
+            new_csv += word + ','
+        return new_csv   
     #@ Generate a new string based on a the related words - embeds non special characters within the string
     def generate_string(self, minimum_size=20, maxiumum_size=60, minimum_related_words=2):
         try:
@@ -452,126 +450,126 @@ class PasswordGeneration(models.Model):
                 print("An Error has ouccred during the proccess of getting the API request")
                 return
         
-        # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
-        if api_dictionary_json:
-            core_words = self.list_core_words()
-            print(f'Your initial core words are {core_words} \n csv form is {self.dictionaryCore}')
-            core_words.append(new_word) 
-            print(f'potential new core words are {core_words}')
-            #Add related words to related dictionary
-            try: 
-                # get api response for words related to the new word
-                api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
-                
-                if api_thesuraus_json:  
-                    # create list of found related words                    
-                    try:
-                        collection_of_antonyms = []
-                            #if list containing antynoyms of word exists; add words to related words
-                        if len(api_thesuraus_json[0]['meta']['ants']) > 0:
+            # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
+            if api_dictionary_json:
+                core_words = self.list_core_words()
+                print(f'Your initial core words are {core_words} \n csv form is {self.dictionaryCore}')
+                core_words.append(new_word) 
+                print(f'potential new core words are {core_words}')
+                #Add related words to related dictionary
+                try: 
+                    # get api response for words related to the new word
+                    api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
+                    
+                    if api_thesuraus_json:  
+                        # create list of found related words                    
+                        try:
+                            collection_of_antonyms = []
+                                #if list containing antynoyms of word exists; add words to related words
+                            if len(api_thesuraus_json[0]['meta']['ants']) > 0:
+                                
+                                if type(api_thesuraus_json[0]['meta']['ants']) == list:
+                                    for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
+                                        #if word in antynyms not blank add to possible words 
+                                        if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
+                                            collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
+                                else:
+                                    print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
+                                
+                                
+                        except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
+                            raise Exception
                             
-                            if type(api_thesuraus_json[0]['meta']['ants']) == list:
-                                for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
-                                    #if word in antynyms not blank add to possible words 
-                                    if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
-                                        collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
-                            else:
-                                print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
-                            
-                            
-                    except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
-                        raise Exception
+                        try:
+                            collection_of_synonyms = []
+                                #if list containing synonyms of word exists add words to related words
+                            if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
+                                if type(api_thesuraus_json[0]['meta']['syns']) == list:
+                                    for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
+                                        if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
+                                            collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
+                                        
+                            #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
+                        except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
+                            raise Exception
                         
-                    try:
-                        collection_of_synonyms = []
-                            #if list containing synonyms of word exists add words to related words
-                        if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
-                            if type(api_thesuraus_json[0]['meta']['syns']) == list:
-                                for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
-                                    if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
-                                        collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
-                                    
-                        #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
-                    except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
-                        raise Exception
+                    else:
+                        print('No json response for thesuarus of provided word found')
+                        
+                except Exception:
+                    print('An error has occured while defining thesuarus values')
+                    return
+                
+                #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
+                try:
+                    # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
+                    API_response_related_words = collection_of_antonyms + collection_of_synonyms
+                    free_random_words = []
+                    related_words = self.list_related_words()
+                    print(f"initial state: related_words{related_words}")
                     
-                else:
-                    print('No json response for thesuarus of provided word found')
+                    for word_index in range(len(API_response_related_words)):
+                        #if word exists in either set of used words or is blank skip it
+                        if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
+                            continue
+                        free_random_words.append(API_response_related_words[word_index]) 
+                        
+                    # Remove words with blank spaces present
+                    free_random_words_no_spaces = []
+                    for word in free_random_words:
+                        if " " in word:
+                            continue
+                        free_random_words_no_spaces.append(word)
+                    #remove trailing , from word
+                    for word_index in range(len(free_random_words_no_spaces)):
+                        free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
                     
-            except Exception:
-                print('An error has occured while defining thesuarus values')
-                return
-            
-        #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
-        try:
-            # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
-            API_response_related_words = collection_of_antonyms + collection_of_synonyms
-            free_random_words = []
-            related_words = self.list_related_words()
-            print(f"initial state: related_words{related_words}")
-            
-            for word_index in range(len(API_response_related_words)):
-                #if word exists in either set of used words or is blank skip it
-                if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
-                    continue
-                free_random_words.append(API_response_related_words[word_index]) 
-                
-            # Remove words with blank spaces present
-            free_random_words_no_spaces = []
-            for word in free_random_words:
-                if " " in word:
-                    continue
-                free_random_words_no_spaces.append(word)
-            #remove trailing , from word
-            for word_index in range(len(free_random_words_no_spaces)):
-                free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
-            
-            free_random_words = free_random_words_no_spaces
-            # if the list of words that can be added is greater then 0
-            chosen_words = []
-            if len(free_random_words) > 0:
-                print(f'List derived for selection is {free_random_words}')
-                print(f'Selecting 3 random words - random_word list length: {len(free_random_words)}')
-                #select  up to 3 random words from the list, take them from the list and add them to desired related words to append
-                
-                print(f'selecting 3 words from {free_random_words}')
-                for i in range(3):
-                    if len(free_random_words) == 0:
-                        break
-                    random_selection = randint(0, len(free_random_words))
-                    chosen_words.append(free_random_words.pop(random_selection))
-                
-                #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
-                print(f'Selected words are: {chosen_words}')
-                for word in chosen_words:
-                    if word == '' or word in related_words:
-                        continue
-                    related_words.append(word)
-                    self.dictionaryRelated += word + ','
-                print(f'final related_words object :{related_words}')
-                
-                
-                #if core words is empty assign new was as initial core word, otherwise append new core word to core words
-                if self.dictionaryCore == '':
-                    self.dictionaryCore = core_words[0]
-                else:         
-                    #convert new corewords list into csv
-                    new_core_words_csv = ''
-                    for word in core_words:
-                        new_core_words_csv += word + ','
-                    #assign new cord word csv to dictionare core
-                    self.dictionaryCore = new_core_words_csv
-                print(f"New core word csv is {self.dictionaryCore}")  
-                self.save()
-                return
+                    free_random_words = free_random_words_no_spaces
+                    # if the list of words that can be added is greater then 0
+                    chosen_words = []
+                    if len(free_random_words) > 0:
+                        print(f'List derived for selection is {free_random_words}')
+                        print(f'Selecting 3 random words - random_word list length: {len(free_random_words)}')
+                        #select  up to 3 random words from the list, take them from the list and add them to desired related words to append
+                        
+                        print(f'selecting 3 words from {free_random_words}')
+                        for i in range(3):
+                            if len(free_random_words) == 0:
+                                break
+                            random_selection = randint(0, len(free_random_words))
+                            chosen_words.append(free_random_words.pop(random_selection))
+                        
+                        #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
+                        print(f'Selected words are: {chosen_words}')
+                        for word in chosen_words:
+                            if word == '' or word in related_words:
+                                continue
+                            related_words.append(word)
+                            self.dictionaryRelated += word + ','
+                        print(f'final related_words object :{related_words}')
+                        
+                        
+                        #if core words is empty assign new was as initial core word, otherwise append new core word to core words
+                        if self.dictionaryCore == '':
+                            self.dictionaryCore = core_words[0]
+                        else:         
+                            #convert new corewords list into csv
+                            new_core_words_csv = ''
+                            for word in core_words:
+                                new_core_words_csv += word + ','
+                            #assign new cord word csv to dictionare core
+                            self.dictionaryCore = new_core_words_csv
+                        print(f"New core word csv is {self.dictionaryCore}")  
+                        self.save()
+                        return
 
-            else:
-                print('No words could be added to related words: found to all exists already')
-                
-        except Exception:
-            print('An error has occured while correcting the users dictionaries')
-            return
-        
+                    else:
+                        print('No words could be added to related words: found to all exists already')
+                        
+                except Exception:
+                    print('An error has occured while correcting the users dictionaries')
+                    return
+            
         #if the purpose is to remove a word and its related words from the dictionary
         else:
             # start process only if word exists in users core words
