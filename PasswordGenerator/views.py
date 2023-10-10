@@ -63,13 +63,10 @@ class UpdateDictionaryFormView(FormView, LoginRequiredMixin):
 class PasswordGeneratorDeleteWord(RedirectView, LoginRequiredMixin):
     def get_redirect_url(self, *args: Any, **kwargs: Any):
         self.url = reverse_lazy('generator_home', kwargs={'user': self.request.user.username})
-        #print(f'redirecting to {self.url}')
         
-        print(f'delete_word called for {self.kwargs["word"]}')
         # - check if user submitted word is can be added to core dictionary
         password_generator = PasswordGeneration.objects.get(owner=self.request.user,)
-        password_generator.update_dictionaries(self.kwargs["word"],APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'], 'websterdictionary')
-        print(f'updated:list:{password_generator.list_core_words()}')
+        password_generator.update_dictionaries(self.kwargs["word"],APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'],b_remove=True)
        
         return super().get_redirect_url(*args, **kwargs)
 class GeneratePasswordView(RedirectView, LoginRequiredMixin): 
@@ -99,11 +96,12 @@ class TestAPIView(TemplateView):
     
     def get_context_data(self, **kwargs: Any):
         #Test Dictionary Response
-        self.TESTWORD = 'Guard'
+        self.TESTWORD = 'golf'
         self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
         #test dictionary response
         #API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
-        API_from_model = self.PasswordGenerator.get_API_request_json(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+        API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+        API_JSON = API_from_model.json()
         context = super(TestAPIView, self).get_context_data()
 
         context['api_json_list_full'] = []
@@ -111,27 +109,27 @@ class TestAPIView(TemplateView):
         context['api_json_antonyms'] = []
         # if api call successful return nothing
         if API_from_model:  
-            parsed_json_list = API_from_model
-            
+            parsed_json_list = API_JSON
             #Testing - Accessing Dictionary data from response
-            #print(f"json response inner object dictionary {parsed_json_list[0]} \n")
-
-            print(f"\njson response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]} \n")
-            print(f"json response using 0, meta,ants as key {parsed_json_list[0]['meta']['ants']} \n")
             
+            if 'meta' in parsed_json_list[0]: 
+                if type(parsed_json_list[0]['meta']['syns']) == list :
+                    print(f"json response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]}")
+                    if len(parsed_json_list[0]['meta']['syns']) > 0:
+                        context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
+                if type(parsed_json_list[0]['meta']['ants']) == list :
+                    print(f"json response using 0 meta ,ants as key {parsed_json_list[0]['meta']['ants']}")
+                    if len(parsed_json_list[0]['meta']['ants']) > 0:
+                        context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
             context['api_json_list_full'] = parsed_json_list 
-            if len(parsed_json_list[0]['meta']['syns']):
-                context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
-            if parsed_json_list[0]['meta']['ants']:
-                context['api_json_antonyms'] = parsed_json_list[0]['meta']['ants'][0]
-    
+
         return context
 class TestFlushView(RedirectView, LoginRequiredMixin):
     
     def get_redirect_url(self, *args: Any, **kwargs: Any):
         self.url = reverse_lazy('generator_home', kwargs={'user':self.request.user.username})
         self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
-        print(f'Words being flushed: Core {self.PasswordGenerator.dictionaryCore} \n related: {self.PasswordGenerator.dictionaryRelated} ')
+        print(f'Words being flushed \n Core: {self.PasswordGenerator.dictionaryCore} \n related: {self.PasswordGenerator.dictionaryRelated} ')
         self.PasswordGenerator.flush_dictionaries()
         print('Redirect for TestFlushView Called')
         return super().get_redirect_url(*args, **kwargs)

@@ -1,11 +1,14 @@
 from django.http import HttpResponse
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView, FormView
-from .models import Credentials
+from .models import CredentialRecord as Credentials
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .mixins import CredentialVaultUserTestMixin
 from .forms import MasterPasswordForm
+from itertools import chain
 
+#Requires friend app
+from UserManagement.models import SolutionUserProfile
 
 # Create your views here.
 class CredentialDetailView(DetailView, LoginRequiredMixin):
@@ -15,7 +18,7 @@ class CredentialDetailView(DetailView, LoginRequiredMixin):
   
 class CredentialCreateView(CreateView, LoginRequiredMixin):
     model= Credentials
-    fields = ['username', 'password', 'service', 'service_type']
+    fields = ['username', 'password', 'service_provider', 'service_type']
     context_object_name = 'credentail_record'
     template_name = 'CredentialVault/credential_new.html'
     
@@ -47,7 +50,7 @@ class CredentialListView(ListView, LoginRequiredMixin, CredentialVaultUserTestMi
     template_name = 'CredentialVault/credential_home.html'
     
     def get_queryset(self):
-        # Return only credentials owned by authenticated user
+        # Return only credentials owned by user
         return super().get_queryset().filter(owner=self.kwargs['user'])
       
 class CredentialDeleteView(DeleteView, LoginRequiredMixin):
@@ -67,7 +70,8 @@ class CredentialUpdateView(UpdateView,LoginRequiredMixin):
     
     def form_valid(self, form):
         if form.is_valid():
-            self.success_url = reverse_lazy('credential_detail', kwargs={'user': self.request.user, 'pk': self.kwargs['pk']})
+            
+            self.success_url = reverse_lazy('credential_detail', kwargs={'user': self.request.user.username, 'pk': self.kwargs['pk']})
         return super().form_valid(form)
     
     #Todo add strict methods that automatically create new credentials
@@ -78,7 +82,32 @@ class CredentialUpdateView(UpdateView,LoginRequiredMixin):
         #if not the same return new password
             #else recreate new password 
         pass        
+   
+   
+#Targeted Views
+      
+class SharedCredentialsView(ListView, LoginRequiredMixin):
+    model= Credentials
+    context_object_name = 'credential_records'
+    template_name = 'CredentialVault/credential_home.html'
     
+    def get_queryset(self):
+        """Return only query set of friends in users friends list"""
+
+        # Get User Profile
+        user_profile:SolutionUserProfile = SolutionUserProfile.objects.get(user = self.kwargs['user']) 
+        query_result = None
+        #for each friend in users friends list
+        for friend in user_profile.get_friends_list():
+            # if query is just starting set result to 1st query
+            if query_result == None:
+                query_result =  super().get_queryset().filter(owner=friend, Share_state='shared') 
+            #other wise append each friend result to query results
+            query_result = list(chain(query_result, super().get_queryset().filter(owner=self.kwargs[friend], Share_state='shared') ))
+            #return completed query
+        return query_result
+
+ 
 class ApplyKeyView(FormView):
     template_name = 'CredentialVault/userkey.html'
     form_class = MasterPasswordForm

@@ -1,0 +1,21 @@
+<script>
+    //This uses JQuery 
+    var $j = jQuery.noConflict();
+    // Define setup function - function that sets up requirements : when page is completed loading create ajax connection and define element of choice - predined id of '#AjaxTarget'
+        //The current situation only supports one static id'd object
+    $j.fn.AjaxSetup = function(){
+        $(document).ready(function (url, ) 
+        {
+            var connection = new XHttpObject();
+            const object = $j('#AjaxTarget');
+        }
+    }
+
+     $j.fn.RefreshElement = function(url, connection)
+     {
+        $(document).ready(function (objectId, url, connection) {
+            
+            return connection}
+     }
+    
+</script>

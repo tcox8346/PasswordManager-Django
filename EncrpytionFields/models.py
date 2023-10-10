@@ -4,7 +4,8 @@ from cryptography.fernet import Fernet
 
 
 #
-# Create your model fields here.
+# TODO - This is field should automatically request-use a user key present in user Cookie or Session to attempt to decrypt that users data.
+    # A Hash of the expected cleartext is compared to the hash of the clear text generated from user provided key
 
 #Note: This class will retrieve a user cleartext key from their cookie
 class SolutionEncryption(models.CharField):
@@ -12,6 +13,9 @@ class SolutionEncryption(models.CharField):
         self.description = "A AES encrypted field that uses a credentials owners key/password as a syncrhonous key, the model must have a owner foreignkey that has a 256 length password"
         kwargs['max_length'] = 256
         kwargs['unique'] = False
+        
+        #if user session has a key variable set automatically use that key as users key
+            
         super().__init__(*args, **kwargs)
     
     def deconstruct(self):

@@ -17,6 +17,7 @@
 </head>
 <body>
     {% block Nav %}
+
         <nav class="navbar navbar-expand-sm navbar-light bg-light ">
             <a class="navbar-brand" href="#">PasswordVault</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,11 +75,21 @@
             </div>
           </nav>
     {% endblock Nav %}
+    {% block color_theme %}
+          <button><p> Current Theme - {{request.session.current_theme}}</p></button>
+            <p> click the button to change the theme! </p>
+    {% endblock color_theme %}
     {% block Body %}
+    <
+      
       {% block content %}{% endblock content %}
+      {% block AJAXcontent %}{% endblock AJAXcontent %}
     {% endblock Body %}
     {% block Foot %}
       
+
     {% endblock Foot %}
+
+
 </body>
 </html>

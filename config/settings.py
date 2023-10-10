@@ -37,10 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles', 
+    # Custom Apps
     'UserManagement',
     'MessageBoard',
     'CredentialVault',
-    'PasswordGenerator'
+    'PasswordGenerator',
+    'FriendFunctionality',
     # Community Apps
         #SSO functionality
 
