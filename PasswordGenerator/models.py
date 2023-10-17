@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 
 from random import randint
 import re
+import requests
 
 #Constants
 USERMODEL = get_user_model()
@@ -95,16 +96,16 @@ class PasswordGeneration(models.Model):
                 #determine if word exists
                 api_dictionary_json:list|None = self.get_API_request_json(API_Service, new_word, API_Key_Dictionary)
                 if api_dictionary_json == None:
-                    print('Resposne return invalid')
+                    print('Response return invalid')
                     raise Exception
                 if 'meta' not in api_dictionary_json[0]:
-                    print('Resposne return invalid - keyword not present')
+                    print('Response return invalid - keyword not present')
                     raise Exception
                     
                     
             except Exception:
                 print("An Error has occured during the proccess of getting the API request")
-                return
+                return False
         
             # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
             try:
@@ -158,7 +159,7 @@ class PasswordGeneration(models.Model):
                         return
             except Exception:
                 print("An error has occured while fetching data")
-                return
+                return False
             #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
             try:
                 # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
@@ -222,14 +223,14 @@ class PasswordGeneration(models.Model):
                         #convert new corewords list into csv | and store in dictionary core                 
                         self.dictionaryCore = self.convert_to_csv(core_words)
                     self.save()
-                    return
+                    return True
 
                 else:
                     print('No words could be added to related words: found to all exists already')
                     
             except Exception:
                 print('An error has occured while correcting the users dictionaries')
-                return
+                return False
             else:
                 print('Custom Word support is currently not functional')
             return True
@@ -255,7 +256,7 @@ class PasswordGeneration(models.Model):
                             
                 except Exception:
                     print("An Error has occured while deriving list of antonyms from json response, this segment is skipped")
-                    
+                    return False
                 # create list of found synonyms    
                 collection_of_synonyms = []
                 try:

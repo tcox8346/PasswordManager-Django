@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.shortcuts import redirect, HttpResponse
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, View, DetailView, FormView, TemplateView
+from django.views.generic import CreateView, View, DetailView, FormView, TemplateView, ListView
 from django.contrib.auth import views as auth_views
 
 from django.conf import settings
@@ -21,6 +21,9 @@ from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode  
 from django.utils.encoding import force_bytes, force_str 
 
+#friend Functionality
+from .models import FriendRequest
+from .forms import FriendRequestSubmissionForm
 
  #CSS Themes - Change if not using bootstrap
 THEMES = {'night': 'data-bs-theme="dark"', 'day':'data-bs-theme="light"',}
@@ -185,7 +188,7 @@ class SigninView(LoginView):
             
         return response
 class ActivateAccountView(View):   
-    """View accessed when user first logs into system after registration"""
+    """View accessed when user first logs into system after registration, includes user profile creation"""
     def get(self, request, uidb64, token, *args, **kwargs):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -204,51 +207,33 @@ class ActivateAccountView(View):
                 print("Successful Profile Generation ")
             else:
                 print("Attempteing Setup Attempt 2")
-                self.SetupUserProfile(user)
+                if not self.SetupUserProfile(user):
+                    print("Unable to generate profile")
                 
             return redirect(reverse_lazy('user_change_password'))
         else:
             messages.warning(request, ('The confirmation link was invalid, possibly because it has already been used.'))
             return redirect('invalid_view')
         
-    def SetupUserProfile(self, active_user):
+    def SetupUserProfile(self, user:SolutionUser):
         """Sets up SolutionUserProfile for user upon successful registration \n Returns True upon successful creation of profile"""
+        print(f"user type: {type(user)} passed for setup")
         try:
-            if not SolutionUserProfile.objects.filter(user=active_user).exists():
-                print("Profile doesnt exists- starting Initialization")
-                
             
-                # Initialize users profile with base information
-                new_profile = SolutionUserProfile(user=active_user)
-                users_share_key= new_profile.generate_free_key()
-                
-                #create  counters for retrying to create unique key
-                counter = 0
-                counter_limit = 10
-                # Check if generated key is unique to SolutionUserProfile Table, if not redo up to x times
-                while SolutionUserProfile.objects.filter(shared_key = users_share_key).exists():
-                    print("Shared Key Found in Record")
-                    if counter >= counter_limit:
-                        print("Counter limit reached")
-                        return False  
-                    
-                    counter += 1
-                    users_share_key= new_profile.generate_free_key()
-                    
-                    if not SolutionUserProfile.objects.filter(shared_key = users_share_key).exists():
-                        break      
-                    
-                # Initialize users profile with base information
-                new_profile.shared_key = users_share_key
-                # Save result to database
-                new_profile.save()
-            return True
+            print(f"try to create profile")
+            # Initialize users profile with base information
+            b_profile_creation_success = user.create_profile(user)
         
         except Exception:
             print("An error has occured while setting up user profile")
-            return False
+            return b_profile_creation_success 
         
-    
+        print("profile successfully created")
+        return b_profile_creation_success
+ 
+#@ TODO View That Allows users to request profile creation in case of error occuring - Authenticated View
+class RequestProfileGenerationView(CreateView, LoginRequiredMixin):
+    pass
 #@ TODO Complete Email based password Reset Functionality 
 class CredentialPasswordResetView(auth_views.PasswordResetView):
     template_name = 'UserManagement/change-password.html' 
@@ -266,4 +251,79 @@ class InvalidTokenView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["error_string"] = 'This is an invalid request, your token has already been used. If this is an error please send a account reset request, or login if you know your password or master password'
         return context
+ 
+ 
+class CreateFriendRequestView(LoginRequiredMixin, CreateView):
+    """This View is never reached manually, it is automatically populated with information from CreateFriendRequest View with the requester: the current user and recipient: a string denoting the name of the user that is requested to be added as a friend"""
+    
+    template = ''
+    context_object_name = 'request_record'
+    form_class = FriendRequestSubmissionForm
+    
+    
+    
+    def __init__(self,*args, **kwargs):
+        super(CreateFriendRequestView, self).__init__(*args, **kwargs)
+        #TODO Change success url to more relevant page
+        success_url = reverse_lazy('home')    
+    
+        class Meta:
+            model = FriendRequest
+            fields = ('requester', 'request_target')   
+    
+    def generate_request(self, requester_user_account:SolutionUser, recipient_username:str):
+        """Generates a new Friend Request Record. Takes recipientname:string and checks/operates to create a new friendrequest record \n Returns True is successful"""
+        try:       
+            # get current users profile
+            user_profile = SolutionUserProfile.objects.get(user=requester_user_account)
+            
+            #  get recipient profile 
+            recipient_account = SolutionUser.objects.get(username=recipient_username)
+            recipient_profile = SolutionUserProfile.objects.get(user = recipient_account)
+            
+            # Determine if record doesnt already exists, and if recipient is not already a friend
+            if not FriendRequest.objects.filter(requester=user_profile, recipient = recipient_profile, request_state=False) and not user_profile.check_friends(recipient_username):
+                    
+                # if not Create a draft record
+                draft_request = FriendRequest(requester=user_profile, recipient = recipient_profile)
+            
+                # Save result
+                draft_request.save()
+            else:
+                #Return false if active friend requests already exists for the two users
+                return False
+        
+        except print("An error has occured during request generation"):
+           return False
+ 
+
+        return True
+    
+    
+    def form_valid(self, form):
+        # When form is submitted and valid
+        if form.is_valid():
+           
+            # Generate new friend request
+            self.generate_request(self.request.user,form.cleaned_data['request_target'])
+            
+        return super.form_valid(form)
+    
   
+# Friend Functionality 
+class ViewFriendRequest(DetailView,LoginRequiredMixin):
+    """View The Request for friendship and allow user to accept or decline the request"""
+    template = ''
+    context_object_name = 'request_record'
+    model = FriendRequest
+    def accept(self):
+        pass
+    def decline(self):
+        pass
+    
+class ViewFriendRequests(ListView, LoginRequiredMixin):
+    template = ''
+    context_object_name = 'request_records'
+    
+
+        

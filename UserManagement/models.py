@@ -4,13 +4,15 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, UserManager, PermissionsMixin
 #Mail Functionality
 from django.core.mail import send_mail
-import datetime
+# Token generation
 from .tokens import TokenGenerator
-import re
-import secrets
+# REquired functions
+import re, secrets, datetime
+from django.urls import reverse
+from django.db.models import Q
 
-
-
+# Validation Requirements
+from django.core.exceptions import ValidationError
 
 #Find way to implement safe guard for importing
 
@@ -22,7 +24,12 @@ import secrets
 #Global Constants
 KEY_SIZE = 256
 
-
+#Validators 
+def validate_requesttarget(value):
+    request_target_user = get_user_model().objects.filter(username = value)
+    if not SolutionUserProfile.objects.filter(request_target_user).exists() :
+        raise ValidationError(("%(value) is does not exists"), params={"value": value})     
+    
 
 # models
 class SolutionUserManager(UserManager):
@@ -100,40 +107,91 @@ class SolutionUser(AbstractUser, PermissionsMixin):
             return None
     def create_masterkey(self):
         return self._create_key(KEY_SIZE)  
-    def generate_free_key(self):
+    def generate_free_key(self, key_size = KEY_SIZE):
         # generate a new key combo that is unique
-        return secrets.token_hex(KEY_SIZE)
-    
+        return secrets.token_hex(key_size)
+  
     def email_user(self, subject: str, message: str,recipient_list: list,from_email: str = ..., **kwargs):
         send_mail(message=message, subject=subject, from_email=from_email, recipient_list=recipient_list)
         return 
-    def create_profile(self):
-        if not SolutionUserProfile.objects.filter(user=self).exists():
-            user_profile =  SolutionUserProfile.objects.create(user=self)
-            user_profile.save()
+    def create_profile(self,user_account ,key_size = KEY_SIZE):
+        # Check if profile already exists
+        if SolutionUserProfile.objects.filter(user=self).exists():
+            return False
+            
+        #Generate a possible share key 
+        share_key= self.generate_free_key(key_size)  
+                
+        #create  counters for retrying to create unique key
+        counter = 0
+        counter_limit = 10
+        # Check if generated key is unique to SolutionUserProfile Table, if not redo up to x times
+        while SolutionUserProfile.objects.filter(shared_key = share_key).exists():
+            print("Shared Key Found in Record")
+            if counter >= counter_limit:
+                print("Counter limit reached, unable to create a profile")
+                return False  
+            
+            counter += 1
+            share_key= self.generate_free_key(key_size)
+    
+        # Create and Save profile record 
+        new_profile = SolutionUserProfile.objects.create(user = user_account, shared_key = share_key)
+        new_profile.save()
+       
+        return True
         
-        else:
-            print("\n User Profile Exists \n")
-        return SolutionUserProfile.objects.filter(user=self).get()
-    def set_uniqueidentifier(self):
-        
-        most_recent = self.objects.latest(field_name = 'unique_identifier')
-        if most_recent:
-            try:
-                new_identifier = most_recent + 1
-                self.unique_identifier = new_identifier
-                print(f'New identifier assigned {new_identifier}')
-            except:
-                print("An error has occured")
+class Token(models.Model):
+    tokenValue = models.CharField(max_length=50, blank = True, null = True, unique=True)
+    owner = models.ForeignKey(get_user_model(), verbose_name=("TokenOwner"), on_delete=models.CASCADE)
+    activeState = models.IntegerField(default=0, blank = True)
+    activeTimeFrame = models.DurationField(null = True, default = datetime.timedelta(hours=10))
+    
+    ActiveStates = {"useable": 0, "used": 1}
+    def deactivateToken(self):
+        self.active = self.ActiveState["useable"]
+    def activateToken(self):
+        self.active = self.ActiveState["used"]
+    def generateToken(self):
+        #Create a token of x length
+        try:
+            newToken = TokenGenerator(self.owner)
+            self.tokenValue = newToken
+        except Exception:
+            print("A Token has been generated that already exists")
+            
+            for i in range(5):
+                newToken = TokenGenerator(self.owner)
+                result = Token.objects.filter(tokenValue = newToken).exists()
+                if not result:
+                    self.tokenValue = newToken
+                    return
+            print(f"A New Token Value unable to be created for user {self.owner.username}")
         return
+    def bisValid(self):
+        # TODO - Impemenent time based validity checking - activeTimeFrame : latest date-time in which token is implicitly valid
+        if self.active == 0:
+            return True
+        return False
+    def reset_token(self):
+       
+        try:
+            # create new tokenValue, distinct
+            self.generateToken()
+            # Change token state to usable
+            self.deactivateToken()
+            # Send email containing new token and link to users email
         
-#TODO setup user profile, users activly interact with this object only, have no direct acces to SolutionUser.
-#This solution is innitially created when the user first signs in to the solution.     
+        except Exception:
+            pass
+        return
+ 
+   
 class SolutionUserProfile(models.Model):
     user = models.ForeignKey(get_user_model(), related_name='profile_owners', on_delete=models.CASCADE)
     image = models.ImageField(blank=True,upload_to=None, height_field=20, width_field=20, max_length=None)
     friend_list = models.CharField(blank=True, max_length=500, default='') # Field encrypted by user master key, csv of friends . "friendname,friendname,...""
-    shared_key = models.CharField(blank=True, default='', max_length=524) # A Encryption key used to encrypt and decrypt Credential Records marked as shared by the user, 256 byte key
+    shared_key = models.CharField(blank=True, default='', max_length=KEY_SIZE) # A Encryption key used to encrypt and decrypt Credential Records marked as shared by the user, 256 byte key
     shared_keys = models.CharField(blank=False, default= "", max_length=2056) # A Dictionary in csv form . example : "username=value, username=value,..."
     
     def get_absolute_url(self):
@@ -278,49 +336,70 @@ class SolutionUserProfile(models.Model):
     def generate_free_key(self):
         # generate a new key combo that is unique
         return secrets.token_hex(KEY_SIZE)
-
-class Token(models.Model):
-    tokenValue = models.CharField(max_length=50, blank = True, null = True, unique=True)
-    owner = models.ForeignKey(get_user_model(), verbose_name=("TokenOwner"), on_delete=models.CASCADE)
-    activeState = models.IntegerField(default=0, blank = True)
-    activeTimeFrame = models.DurationField(null = True, default = datetime.timedelta(hours=10))
+   
+class FriendRequest(models.Model):
+    requester = models.ForeignKey(SolutionUserProfile, related_name='requesting_user', on_delete=models.CASCADE) # Direct mapping to UserAccount entry
+    request_target = models.ForeignKey(SolutionUserProfile, related_name='request_target', on_delete=models.CASCADE, validators=[validate_requesttarget])
+    request_state = models.BooleanField(default=False, null=False) # State: active = 0 , inactive  = 1
+    request_datetime = models.DateTimeField(auto_now_add=True)
+    request_response = models.BooleanField(blank = True, null=True) # State: declined = 0 , accepted  = 1
     
-    ActiveStates = {"useable": 0, "used": 1}
-    def deactivateToken(self):
-        self.active = self.ActiveState["useable"]
-    def activateToken(self):
-        self.active = self.ActiveState["used"]
-    def generateToken(self):
-        #Create a token of x length
-        try:
-            newToken = TokenGenerator(self.owner)
-            self.tokenValue = newToken
-        except Exception:
-            print("A Token has been generated that already exists")
-            
-            for i in range(5):
-                newToken = TokenGenerator(self.owner)
-                result = Token.objects.filter(tokenValue = newToken).exists()
-                if not result:
-                    self.tokenValue = newToken
-                    return
-            print(f"A New Token Value unable to be created for user {self.owner.username}")
-        return
-    def bisValid(self):
-        # TODO - Impemenent time based validity checking - activeTimeFrame : latest date-time in which token is implicitly valid
-        if self.active == 0:
-            return True
-        return False
-    def reset_token(self):
-       
-        try:
-            # create new tokenValue, distinct
-            self.generateToken()
-            # Change token state to usable
-            self.deactivateToken()
-            # Send email containing new token and link to users email
+    # Disallow repeat request for active request - TODO - set contraint to allow only one record with current constraint to be active at a time. 
+        # This is to allow a user to request a friend again 
+    class Meta:
+        #unique together current constraint and request_state = False : active
+        constraints = (models.UniqueConstraint(fields=['requester', 'request_target'], condition=Q(request_state=False), name="unique_freind_request"),)
         
-        except Exception:
-            pass
-        return
+       
+    def get_absolute_url(self):
+     return reverse("request_detail", kwargs={"pk": self.pk})
     
+    # This classes functions all work on the premise of user profiles
+    def process_request(self, is_accepted, current_user_profile:SolutionUserProfile):
+        """Accepts a boolean and the user profile of the current user. \n Results in the manipulation of both the recipient and requesting user profiles friends list being updated if boolean is True"""
+        if type(is_accepted) == bool and current_user_profile == self.request_target:
+            #if the request has been accepted 
+            self.request_response = is_accepted
+            
+            if is_accepted == True:
+                try:
+                    
+                    recipient = current_user_profile
+                    requester = self.requester
+                    
+                    # add username of requester to recipient friends list
+                    recipient.add_friend(requester)
+                
+                    # add username of recipient to  requester friends list
+                    requester.add_friend(recipient)
+                
+                   
+                except Exception: 
+                    print('An error has occured while modifying friendlist')
+                    return 0
+                
+                
+            # When completed change request to inactive
+            try:
+                self.request_response = is_accepted
+                self.request_state = True
+            
+            except Exception:
+                print('An error has occured while accessing or changing a friend request')
+                return 0
+            
+            # If no errors have occured save the changes to the record
+            self.save(commit=True)
+            return 1
+    def cancel_request(self, requester_profile:SolutionUserProfile):
+        # if requester desires to cancel the friend request
+        if requester_profile == self.requester:
+            # set request state to inactive
+            self.request_state = 1
+        
+        # save cancel state change
+        self.save(commit = True)
+        # return value designating operation success
+        
+        return 1
+      

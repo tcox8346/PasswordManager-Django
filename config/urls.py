@@ -21,11 +21,18 @@ from .views import CoreHomeView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', CoreHomeView.as_view(), name='home'),
+    # Core User Management App
     path('accounts/', include('UserManagement.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('forum/', include('MessageBoard.urls')),
     path('<str:user>/', include('UserManagement.urls')),
+    # Forum App - 
+    path('forum/', include('MessageBoard.urls')),
+    # Credential Management app
     path('<str:user>/', include('CredentialVault.urls')),
+    #Password  Generator App
     path('<str:user>/', include('PasswordGenerator.urls')),
-    #SSO
+    # Friend functionality App
+    #path('<str:user>/friends/', include('UserManagement.urls')),
+    
+    #Single Sign On App
 ]

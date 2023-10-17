@@ -6,7 +6,7 @@ from .views import redirect
 TESTSTATUES = {0:"In progress", 1:"Failed", 2:"Success"}
 #Test HomePage View
 class TestSystemHomeView(TestCase):
-    def __init__(self, methodName: str = "runTest"):
+    def __init__(self, methodName: str = "runHomeviewTest"):
         self.name = 'TestSystemHomeView'
         self.test_statues = TESTSTATUES[0]
         self.homeurl = '127.0.0.1'
@@ -29,7 +29,7 @@ class TestSystemHomeView(TestCase):
         return
 #Test User Creation
 class TestSystemUserCreation(TestCase):
-     def __init__(self, methodName: str = "runTest"):
+     def __init__(self, methodName: str = "runUserCreationTest"):
      
         self.name = 'TestSystemUserCreation'
         self.test_statues_formurl = TESTSTATUES[0]
@@ -63,7 +63,7 @@ class TestSystemUserCreation(TestCase):
 
 # User Authentication
 class TestSystemAuthenticationView(TestCase):
-     def __init__(self, methodName: str = "runTest"):
+     def __init__(self, methodName: str = "runSystemAuthenticationTest"):
         self.name = 'TestSystemHomeView'
         self.test_statues = TESTSTATUES[0]
         self.homeurl = '127.0.0.1'
@@ -87,7 +87,7 @@ class TestSystemAuthenticationView(TestCase):
 
 # Test Authenticated HomePage View
 class TestSystemAuthenticatedHomeView(TestCase):
-     def __init__(self, methodName: str = "runTest"):
+     def __init__(self, methodName: str = "runAuthenticatedHomeViewTest"):
         self.name = 'TestSystemHomeView'
         self.test_statues = TESTSTATUES[0]
         self.homeurl = '127.0.0.1'
@@ -111,7 +111,7 @@ class TestSystemAuthenticatedHomeView(TestCase):
 
 #Test Established Navigational Links
 class TestSystemLinks(TestCase):
-     def __init__(self, methodName: str = "runTest"):
+     def __init__(self, methodName: str = "runHomeLinksTest"):
         self.name = 'TestSystemHomeView'
         self.test_statues = TESTSTATUES[0]
         self.homeurl = '127.0.0.1'
@@ -133,5 +133,15 @@ class TestSystemLinks(TestCase):
         print(f'Testing of {self.name} resulted in : {self.test_statues}')
         return
 
+#Test profile Generation
+class TestProfileCreation(TestCase):
+    def __init__(self, methodName: str = "runProfileCreationTest"):
+        pass
 
-
+class TestFriendRequest(TestCase):
+    def __init__(self, methodName: str = "runFriendRequestTest"):
+        pass
+    
+class TestFriendRequestAcceptance(TestCase):
+    def __init__(self, methodName: str = "runFriendRequestAcceptanceTest"):
+        pass

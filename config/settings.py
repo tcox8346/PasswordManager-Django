@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'MessageBoard',
     'CredentialVault',
     'PasswordGenerator',
-    'FriendFunctionality',
+    
     # Community Apps
         #SSO functionality
 

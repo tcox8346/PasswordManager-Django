@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SignupView, ActivateAccountView, ProfileDetailView, DeleteView, SettingsView, CredentialPasswordChangeView, InvalidTokenView
+from .views import SignupView, ActivateAccountView, ProfileDetailView, DeleteView, SettingsView, CredentialPasswordChangeView, InvalidTokenView, CreateFriendRequestView
 
 
     #All profile paths = accounts/...
@@ -12,4 +12,11 @@ urlpatterns = [
     path('profile/', ProfileDetailView.as_view(), name='user_profile'),
     path('settings/', SettingsView.as_view(), name='user_settings'),
     path('error/', InvalidTokenView.as_view(), name='invalid_view'),
+    #Every url begins with <str:username>
+        # url to view a friend request detail view
+    #path('<int:pk>', FriendRequestSubmissionForm.as_view(), name ='friendrequest'),
+    # url to create a new friend request
+    path('new/', CreateFriendRequestView.as_view(), name ='friendrequest_create'),
+   
+    
 ]

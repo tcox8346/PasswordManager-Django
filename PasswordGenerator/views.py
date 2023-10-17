@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 from django import http
 from django.forms.models import BaseModelForm,  ModelForm
-from django.http import HttpRequest,JsonResponse
+from django.http import request
 from django.shortcuts import render, redirect
 from django.views.generic import FormView, RedirectView, TemplateView
 from django.urls import reverse_lazy, reverse
