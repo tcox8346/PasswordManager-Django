@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %} Forum {% endblock title %}
+
+{% block Body %}
+
+    <!--Post Creation Markup-->
+    <div class='container-fluid'>
+        <div class ="position-relative top-0 start-50 translate-middle-x" >
+            <i class="fas fa-h3"> Forum Posts</i>
+        </div>
+        <div>
+            {% if user.is_authenticated %}
+                <i class="fas fa-h3"> <a href = {% url 'post_new' %}> Create a Post <a/></i>
+            {% endif %}
+        </div>
+        <br>
+        {% if all_Posts %}
+            {% for post in all_Posts %}
+                <div class ="position-relative top-0 start-50 translate-middle-x" > 
+                    <nav> {{post.author.username}}</nav>
+                    <a href = {% url 'post_detail' post.pk %}><nav> {{post.title}}</nav></a>
+                    <nav> {{post.body}}</nav>
+                </div> 
+            {% endfor %}
+            {% else %}
+            <p> No Posts Available</p>
+        {% endif %}
+    </div>
+
+{% endblock Body %}
+
+{% block Foot %}
+
+
+{% endblock Foot %}

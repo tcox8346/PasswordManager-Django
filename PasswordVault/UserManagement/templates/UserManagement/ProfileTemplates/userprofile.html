@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %} {{user.username}}  {% endblock title %}
+{% block Body %}
+    <!--Profile  Markup-->
+   
+     <!--Display User Image  with link to modify it-->
+    <div> 
+        <br>
+        <span>{{profile_info.image}} </span>
+        <a href = '#'><button type="button" class="btn btn-primary">Change User Icon</button></a>
+    </div>
+    <div> 
+        <br>
+        <i class="fas fa-h3 "> Check Out Your Friends</i>
+        <!--Link to FriendList model instance of user } Coupling with FriendFunctionality App  - decoupleing desired-->
+            
+        <span><a href = {% url "user_friend_list" user user.slug %}><button type="button" class="btn btn-primary">Friends</button></a> </span>
+        
+        
+    </div>
+    
+    
+{% endblock Body %}
+
+{% block Foot %}
+
+{% endblock Foot %}

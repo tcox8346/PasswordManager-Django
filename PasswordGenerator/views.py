@@ -8,7 +8,7 @@ from django.urls import reverse_lazy, reverse
 from .models import PasswordGeneration
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import PasswordGeneratorForm
-import json
+
 
 
 # Constants
@@ -46,12 +46,13 @@ class UpdateDictionaryFormView(FormView, LoginRequiredMixin):
     
     #@ TODO - On Form Submission - Call methods on users PasswordGeneration object
     def form_valid(self, form: Any):
-        password_generator = PasswordGeneration.objects.get(owner=self.request.user,)
+        password_generator:PasswordGeneration = PasswordGeneration.objects.filter(owner=self.request.user,)
         # - check if user submitted word is can be added to core dictionary
-       
+        print('password_generator retrieved')
         if password_generator.bCan_add_word(form.cleaned_data['word']):
             #- if yes, call functions that add word to core dictionary
-            password_generator.update_dictionaries(form.cleaned_data['word'],APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'])
+            print('Atempting to update dictionary')
+            password_generator.update_dictionaries(form.cleaned_data['word'], APIKEYS_WEBSTER['dictionary'], APIKEYS_WEBSTER['thesuarus'])
             # Save changes 
             password_generator.save()
             # - if successful redirect user to password generator home page
@@ -83,13 +84,7 @@ class GeneratePasswordView(RedirectView, LoginRequiredMixin):
             print('An error has occured while creating a password for user')
         return super().get_redirect_url(*args, **kwargs)
  
-class TestPage(TemplateView):
-    template_name ='PasswordGenerator/Testing/testing.html'  
-class TestRedirect(RedirectView):
-    def get_redirect_url(self, *args: Any, **kwargs: Any):
-        self.url = reverse_lazy('testing_home', kwargs={'user':self.request.user.username})
-        print('Testing Redirect Called')
-        return super().get_redirect_url(*args, **kwargs)
+
 class TestAPIView(TemplateView):
     """View that test api call - This variant test webster dictionary thesuarus for the word 'food' """
     template_name ='PasswordGenerator/Testing/testingAPI.html'
@@ -98,31 +93,33 @@ class TestAPIView(TemplateView):
         #Test Dictionary Response
         self.TESTWORD = 'golf'
         self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
-        #test dictionary response
-        #API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
-        API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
-        API_JSON = API_from_model.json()
-        context = super(TestAPIView, self).get_context_data()
+        
+        if self.PasswordGenerator != None:
+            #test dictionary response
+            #API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+            API_from_model = self.PasswordGenerator.get_API_request_json(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+            context = super(TestAPIView, self).get_context_data()
 
-        context['api_json_list_full'] = []
-        context['api_json_synonyms'] = []
-        context['api_json_antonyms'] = []
-        # if api call successful return nothing
-        if API_from_model:  
-            parsed_json_list = API_JSON
-            #Testing - Accessing Dictionary data from response
-            
-            if 'meta' in parsed_json_list[0]: 
-                if type(parsed_json_list[0]['meta']['syns']) == list :
-                    print(f"json response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]}")
-                    if len(parsed_json_list[0]['meta']['syns']) > 0:
-                        context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
-                if type(parsed_json_list[0]['meta']['ants']) == list :
-                    print(f"json response using 0 meta ,ants as key {parsed_json_list[0]['meta']['ants']}")
-                    if len(parsed_json_list[0]['meta']['ants']) > 0:
-                        context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
-            context['api_json_list_full'] = parsed_json_list 
-
+            context['api_json_list_full'] = []
+            context['api_json_synonyms'] = []
+            context['api_json_antonyms'] = []
+            # if api call successful return nothing
+            if API_from_model:  
+                parsed_json_list = API_from_model
+                #Testing - Accessing Dictionary data from response
+                
+                if 'meta' in parsed_json_list[0]: 
+                    if type(parsed_json_list[0]['meta']['syns']) == list :
+                        print(f"json response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]}")
+                        if len(parsed_json_list[0]['meta']['syns']) > 0:
+                            context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
+                    if type(parsed_json_list[0]['meta']['ants']) == list :
+                        print(f"json response using 0 meta ,ants as key {parsed_json_list[0]['meta']['ants']}")
+                        if len(parsed_json_list[0]['meta']['ants']) > 0:
+                            context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
+                context['api_json_list_full'] = parsed_json_list 
+        else:
+            print(f"{self.request.user.username} user not found")
         return context
 class TestFlushView(RedirectView, LoginRequiredMixin):
     

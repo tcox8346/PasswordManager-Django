@@ -1,0 +1,39 @@
+This project will require a email address and a password to login to the system, but a master key will be generated upon successful registration and sent to the email provided 
+
+This master key is entered on the users homepage, in which it is stored for that session in a cookie. to be used to decrypt credential records.
+
+For now:
+    the password will be the true master key and the key is a fake key that obfuscates information
+
+Information Resources
+    Email Setup 
+        https://mailtrap.io/blog/django-send-email/
+        https://www.geeksforgeeks.org/setup-sending-email-in-django-project/
+        https://docs.djangoproject.com/en/3.0/topics/email/
+
+    Favicon Setup
+        https://learndjango.com/tutorials/django-favicon-tutorial
+        
+    Class Based Generic Views
+        https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Generic_views
+        
+        
+    Custom Field Encryption
+        https://medium.com/finnovate-io/using-custom-model-fields-to-encrypt-and-decrypt-data-in-django-8255a4960b72
+        
+    API Consumption
+        Google search Consume Django API
+
+    Requirements to remember:
+        For api consumption
+        install requests library in ve
+
+
+    
+    Friend App Setup
+    https://www.youtube.com/watch?v=hyJO4mkdwuM
+
+    Django Auto Slug Library - Model Level Automatic Slug Generation
+    python -m pip install django-autoslug
+
+    

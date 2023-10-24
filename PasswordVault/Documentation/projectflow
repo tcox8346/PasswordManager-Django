@@ -1,0 +1,69 @@
+Database Tables 
+
+    USERACCOUNT 
+        Purpose:
+            Stores user information required for authentication and identification. Usernames, emailaddresses, passwords, masterkeys, and account states are stored in this table
+                Secondary: Stores Current activation Token and Token state. Tokens are used to activate an account after registration. A records Token is sent to a records emailaddresses
+                upon successful registration with a url that temporarily allows users to change their passwords to a custom value if they desire
+                Security: User registrationh requires a username and an email address, the password is an automatically generated master key until changed user.
+
+        
+
+    USERPROFILE
+        Purpose: 
+            Stores information attributed to a specific user: users list of other users who they allow to view their shared credential records, shared credential identifiers : list of integers, users display settings, profile picture, and users preferences. A list of friend request to be viewed{id}.
+            Also stores a list of all post and comments a user has made that have been commented on.
+
+            Operation: 
+                When another user is added to a users friendlist, the users record friendslist attribute has the current users username added to the list:dictionary of friends and
+                    the other user
+
+    CREDENTIALRECORD
+        Purpose:
+            Stores information attrributed to specific accounts defined by user. Stores unique record identifier aka a interger pk, record service provider, records username, password, and the type of record the user desires to label it as.
+            The lables by default include: Unshared and shared.
+
+        Securtiy:
+            Each record is encrypted using the owning users master key if they are not shared.
+            If a record is shared the sharing party uses it's share key to encrypted the record instead of the master key. Users who are on the owning user's USERPROFILE have their
+            USERPROFILE shared credential identifiers updated to include the current records unique identifier value
+
+        Viewing:
+            Owning user views all records as a list on their homepage
+            Users who have records shared to them see the records under a expandable segment of the webpage
+                - operational : Upon generating known records list shared records are found by searching CREDENTIALRECORD table for values of unique identifier that exists in USERPROFILE - these identifiers are integer values aka primary keys
+                shared credential identifiers
+
+     
+    FriendRequest
+        Purpose: 
+            Stores information of recent friend request that have yet to be accepted or declined.
+            Stores Requester username , Recipient username, date time sent, active state - boolean, and accept : boolean, default blank.
+        A users waiting request are shown when user directs to their profile settings - friendlist tab
+        When a user accepts a request 
+            the accept boolean is set to 1
+            the active state is set to 0
+            The requesters userprofile friendlist has the recipient username appended
+            the recipients userprofile friendlist has the requester username appended
+
+
+Overall Security:
+    All Records are encrypted using the servers secret key
+    Server secret key is stored as an eviorment variable in use
+    Server secret key is stored in a password locked file at rest
+
+    All Private User Specific Record are encrypted using the users masterkeys
+    All Private Records Shared To Other Users Are Encrypted Using owning Users Share Key
+
+
+Operation Aspects:
+    Friendlist:
+        Each User has a list of friends in their USERPROFILE
+        When a user adds a friend, an accept or decline request is sent to the account 
+
+
+Connections
+    UserAccount <-> User Profile
+    User Profile <-> Friend Request
+    UserAccount <-> CREDENTIALRECORD
+        User Profile<->CREDENTIALRECORD(shared)

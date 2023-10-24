@@ -1,0 +1,11 @@
+Version 0.03
+Currently Reworked friendship functionality to be part of UserManagement app - The functions are unimplemented and requires urls,views and setup
+
+Friend Functionality Not Fully Functionality    
+    FriendList Display Needs To Be Completed
+    Add and Remove Friend Functionaility needs completion
+
+Security
+    Basic Field Encrpytion Needs to be implemented - Server Key To User Table Fields : username , email 
+    Private Information Encryption Field Needs To Be Properly Implemented - UserModel.key : Credentials.username, password, email ; if type = private
+    Shared Information Encryption Field Needs To Be Properly Implemented - UserProfile.key : Credentials.username, password, email ; if type = shared

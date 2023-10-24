@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %} {{user.username}} Request  {% endblock title %}
+{% block Body %}
+    <!--This page is to display a instance of a friend request made to you-->
+    <!--If request is active -->
+    {% if request_record.request_state == False %}
+    
+    <div>
+        <span>
+            <i class="fas fa-h2    ">{{request_record.requester.user.username}}</i>
+        </span>
+        <span>
+            <i class="fas fa-h2    ">{{request_record.request_datetime}}</i>
+        </span>
+        <div>
+            <span>
+                <a name="Accept_friend" id="f_0" class="btn btn-primary" href="#" role="button">Accept</a>
+            </span>
+            <span>
+                <a name="decline_friend" id="f_1" class="btn btn-primary" href="#" role="button">Decline</a>
+            </span>
+
+        </div>
+    </div>
+    
+     <!--Display Requester and DateTime of Requests -->
+     {% for Detail in frequest_record %}
+
+        <!--Directs To Friend Options - Remove Friend-->
+        <div>
+            <a href = '#'> {{friend.user.username}} </a>
+        </div>
+     
+     {% endfor %}
+
+     {% else %}
+        <i class="fas fa-h3    ">This request is no longer active</i>
+     {% endif %}
+
+ 
+ {% endblock Friend_Funcationilty_Requests %}    
+{% endblock Body %}
+
+{% block Foot %}
+
+{% endblock Foot %}

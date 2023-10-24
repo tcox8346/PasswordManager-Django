@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Post{% endblock title %}
+{% block Body %}
+    <!--Post Detail Markup-->
+    <div>
+        {% if user.is_authenticated %}
+            {% if user == post_info.author %}
+                <nav> 
+                    <a href= {% url 'post_delete' post_info.pk %}> Delete Post</a>
+                    
+                </nav>
+                <br>
+            {% endif %}
+        {% endif %}
+        <div>
+            <div> 
+                {{post_info.author.username}}
+            </div>
+            <div> 
+                {{post_info.body}}
+            </div>
+            <div> 
+            {% if user.is_authenticated %}
+            <br>
+                {% if user == post_info.author %}
+                    <nav> 
+                        <a href= {% url 'post_update' post_info.pk %}> Update Post</a>
+                    </nav>
+                {% endif %}
+            {% endif %}
+            </div>
+            <div class = 'comment_section'> 
+                {% if user.is_authenticated%}
+                    <nav> 
+                        <a href= {% url 'comment_new' post_info.pk%}> Comment Now </a>
+                    </nav>
+                {% endif %}
+                {% if post_info.comments.all %}
+                {% for comment in post_info.comments.all %}
+                <div> 
+                    {{comment.author.username}}
+                    <br>
+                    {{comment.body}}
+                    
+                </div>
+                {% endfor %}
+                {% else %}
+                <nav> 
+                    <p> No Comments, yet </p>
+                </nav>
+                {% endif %}
+            </div>
+        
+        </div>
+    </div> 
+
+
+{% endblock Body %}
+
+{% block Foot %}
+
+
+{% endblock Foot %}

@@ -1,0 +1,70 @@
+Password Generator 
+    x - Enable a means of clicking a button which automatically submits a form for PasswordGenerator: Removing word from user core words, Adding word to user core words
+    x - Register and Implement API keys for Standard API Dictionary - merian-webster
+     Enable production methods of adding and removing words from list
+  
+
+
+CSS
+    Style all templates to have main content be centered on PasswordGenerator
+    Add website logo to top left of navigation bar
+    All Body sections centered on page - grey background white/or blue words
+
+    - create a dark/light mode link to change users webpage theme
+        -Create urls/views and buttons on base.html that enable themes to change between day and night when clicked - This iteration uses redirects to the current page.
+
+Testing
+    Create testing modules to test account creation
+    create testing modules to test login and webpage navigation
+    Create testing module to test password generation
+    Create testing module to test message posting and comment posting
+    Create testing module to test account removal
+    Create testing module to test account password changes
+    create testing module to test account reset and deactivation
+
+Credential Vault
+    X -Create button to generate password on navigation bar - authentiacted user, password generation preferences required
+    Design way of showing list of all users that have access to credential record, add button to see users with access
+    Design way of informing user to change user credentials
+    --Friend Based Functionaly
+        This model will not show results to users not on related userprofiles friends list
+
+    Enable Timed Token Activation - User uses emailed link and change password within a set time frame, if not the token expired page is to be reached upon using the link, a new token is sent to user and the process starts a new.
+    Alphabetically Sort All Entries credentials by service name
+    Hide/ do no load credential list until master key is provided
+
+Password Share
+    Determine a method to redirect to a user provided url(form), fill related credential details automatically, submit form and return result in new tab of browser. 
+
+
+General 
+    Setup SSL/TLS Security
+    Enable Model Security For All Models
+    Enable Enhanced Model Security - Encrypt Critical User Credentials with a key derived from master key and servers special key 
+
+    Setup Live Web Service - Heroku
+    Store KEYS in seperate file that is accessed by server 
+
+    Setup Links To User Profile On Top Right Of Ribbon
+
+    Setup Webpages that redirect to previous page upon success
+
+    Setup Weblinks that do task without navigating away from page. I.e add user without leaving current page.
+
+AJAX 
+    Set up javscript/jqeury script to enable single page updating of user credential list without reloading a webpage.
+        Functions are to be defined in one standalone script and imported to html pages that require them
+
+
+TODO LIST
+    General System Setup
+        Enforce HTTPS
+        Store Server Key in enviorment variable
+        Store server key at rest in auxilarry file - encrpted
+        Setup Public Facing Server
+        Name url domain - Credentialales.stu
+
+    UserManagement
+        Implement means of deactivating users authentication token when user changes Password
+        Implement means of resetting password by sending confirmation email and requiring users key(which is sent with the registration email during the proccess of account creation and activation)
+        Implement Method that sends email to users when a token has been successfully reset

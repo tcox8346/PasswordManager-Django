@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %} {{user.username}} Friends Requests  {% endblock title %}
+{% block Body %}
+    <!--Profile  Markup-->
+
+{% if request_records %}{% endif %}
+       
+ {% block Friend_Funcationilty_Requests %}
+ 
+    <div>
+        <a href = {% url "make_friend_request" user.slug %}> Add A Friend Now </a>
+    </div>
+ 
+ {% endblock Friend_Funcationilty_Requests %}   
+ 
+
+ {% block test %}
+ <i class="fas fa-h3    "> TEST Pending Requests</i>
+    {% for record in request_records %}
+    
+      <!--Display Record Details if request is active for multiple records -->
+        <div>
+            <ul class="list-group list-group-horizontal">
+                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.requester}} </i></li>
+                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.request_datetime}} </i></li>
+            </ul>
+        </div>        
+    {% endfor %}
+    <br>
+ {% endblock test %}
+
+ {% block active_friend_request %}
+ <i class="fas fa-h3    "> Pending Requests</i>
+    {% for record in request_records %}
+    
+      <!--Display Record Details if request is active for multiple records -->
+        {% if record.request_state == False %}
+        <div>
+            <ul class="list-group list-group-horizontal">
+                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.requester.user.username}} </i></li>
+                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.request_datetime}} </i></li>
+            </ul>
+        </div>        
+        
+        {% endif %}
+    {% endfor %}
+ 
+ {% endblock active_friend_request %}
+{% endblock Body %}
+
+{% block Foot %}
+
+{% endblock Foot %}

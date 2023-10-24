@@ -56,10 +56,7 @@
 
 
     {% block Testing %}
-    <br>
-    <div id="UserTestRedirect"> 
-        <i class="fas fa-h2 text-danger"> <a href={% url 'testing_redirect' user.username%}> Test Page</a></i>
-    </div>
+
     <br>
     <div id="UserTestAPI"> 
         <i class="fas fa-h2 text-danger"> <a href={% url 'testing_api' user.username%}> Test API</a></i>

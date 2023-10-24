@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %} {{user.username}} FriendsList  {% endblock title %}
+{% block Body %}
+    <!--Profile  Markup-->
+   
+     <!--Display List of friends usernames -->
+     {% for friend in friend_record.friends_list.all %}
+        <!--Directs To Friend Options - Remove Friend-->
+        <div>
+            <a href = '#'> {{friend.user.username}} </a>
+        </div>
+     
+     {% endfor %}
+
+
+    
+    
+ {% block Friend_Funcationilty_Requests %}
+ 
+    <div>
+        <a href = {% url "make_friend_request" user.slug %}> Add A Friend Now </a>
+    </div>
+ 
+ {% endblock Friend_Funcationilty_Requests %}   
+ 
+ {% block active_friend_request %}
+    
+    <div>
+        <a href = {% url "all_active_request" user.username user.slug %}> Active Friend Requests </a>
+    </div>
+ {% endblock active_friend_request %}
+{% endblock Body %}
+  
+{% block Foot %}
+
+{% endblock Foot %}

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import UpdateDictionaryFormView, PasswordGeneratorHomeView, PasswordGeneratorDeleteWord,GeneratePasswordView
-from .views import TestRedirect, TestPage, TestAPIView,TestFlushView
+from .views import TestAPIView,TestFlushView
 #@ This allows two options - to view a users password generation settings and to update said settings
 # Base patter is .../<username>/
 urlpatterns = [
@@ -14,8 +14,6 @@ urlpatterns = [
     path('generate_word/', GeneratePasswordView.as_view(), name ='generate_string'),
 
     #Testing Paths
-    path('testpage/', TestPage.as_view(), name ='testing_home'),
-    path('testpage/redirect/', TestRedirect.as_view(), name ='testing_redirect'),
     path('testpage/API/', TestAPIView.as_view(), name ='testing_api'),
     path('testpage/flush/', TestFlushView.as_view(), name ='testing_flush'),
     
