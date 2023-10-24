@@ -5,12 +5,12 @@ from django.contrib.auth import get_user_model
 
 class CredentialRecord(models.Model):
     # Usermanagement record that specifies the user who owns the record
-    owner = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='credentials', to_field='username')
+    owner = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='credentials', to_field='username') 
        # Service feild: This fields holds what service is tied to the credential record, i.e the service provider of the credential
     service_provider = models.CharField(blank=True,default='Undefined', max_length=50)
-    username = models.CharField(blank=False, max_length=50)
-    password =  models.CharField(blank=False, max_length=50, default='Uninitialized')  #This is to be in encrypted form - Derive a model class that uses a key provided by user to encrpyt and decrypt
-    email = models.EmailField(blank=True, null=True, default=None) # An optional field that denotes the email address associated with the record
+    username = models.CharField(blank=False, max_length=50) #@ Encrypt
+    password =  models.CharField(blank=False, max_length=50, default='Uninitialized')  #@ Encrypt - Derive a model class that uses a key provided by user to encrpyt and decrypt
+    email = models.EmailField(blank=True, null=True, default=None) #@ Encrypt # An optional field that denotes the email address associated with the record
     Share_state = (('Public','shared'), ('Private','unshared')) # Specifier that designates if a record is shared to friend profiles
     
     # Service choices stores a value that denotes the class of record. For example

@@ -1,1 +1,0 @@
-This app is used to add friend based functionality to a service. This relies on a user profile system being present.

@@ -1,1 +1,0 @@
-This app is meant to enable to creation and management of Credentials. 

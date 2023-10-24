@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.shortcuts import redirect, HttpResponse
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, View, DetailView, FormView, TemplateView, ListView
+from django.views.generic import CreateView, View, DetailView, FormView, TemplateView
 from django.contrib.auth import views as auth_views
 
 from django.conf import settings
@@ -21,9 +21,7 @@ from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode  
 from django.utils.encoding import force_bytes, force_str 
 
-#friend Functionality
-from .models import FriendRequest
-from .forms import FriendRequestSubmissionForm
+
 
  #CSS Themes - Change if not using bootstrap
 THEMES = {'night': 'data-bs-theme="dark"', 'day':'data-bs-theme="light"',}
@@ -62,10 +60,9 @@ class SettingsView(TemplateView, LoginRequiredMixin):
 #@ TODO
 class ProfileDetailView(DetailView, LoginRequiredMixin):
     model = SolutionUserProfile
-    template_name = 'UserManagement/userprofile.html'
+    template_name = 'UserManagement/ProfileTemplates/userprofile.html'
     context_object_name = 'profile_info'
-    
-    #Create a method that is called by javascript to allow a user to manual input their master key to store as a cookie variable
+        
 
 # Public Views
 class SignupView(CreateView):
@@ -201,14 +198,6 @@ class ActivateAccountView(View):
             user.save()
             login(request, user)
             messages.success(request, ('Your account have been confirmed. Your Master key -ie your protection code- has been generated and sent to your provided email address'))
-            
-            # Create user profile before redirection to password change form
-            if self.SetupUserProfile(user):
-                print("Successful Profile Generation ")
-            else:
-                print("Attempteing Setup Attempt 2")
-                if not self.SetupUserProfile(user):
-                    print("Unable to generate profile")
                 
             return redirect(reverse_lazy('user_change_password'))
         else:
@@ -217,23 +206,17 @@ class ActivateAccountView(View):
         
     def SetupUserProfile(self, user:SolutionUser):
         """Sets up SolutionUserProfile for user upon successful registration \n Returns True upon successful creation of profile"""
-        print(f"user type: {type(user)} passed for setup")
         try:
-            
-            print(f"try to create profile")
             # Initialize users profile with base information
             b_profile_creation_success = user.create_profile(user)
+            
         
         except Exception:
             print("An error has occured while setting up user profile")
             return b_profile_creation_success 
         
-        print("profile successfully created")
         return b_profile_creation_success
- 
-#@ TODO View That Allows users to request profile creation in case of error occuring - Authenticated View
-class RequestProfileGenerationView(CreateView, LoginRequiredMixin):
-    pass
+
 #@ TODO Complete Email based password Reset Functionality 
 class CredentialPasswordResetView(auth_views.PasswordResetView):
     template_name = 'UserManagement/change-password.html' 
@@ -251,79 +234,3 @@ class InvalidTokenView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["error_string"] = 'This is an invalid request, your token has already been used. If this is an error please send a account reset request, or login if you know your password or master password'
         return context
- 
- 
-class CreateFriendRequestView(LoginRequiredMixin, CreateView):
-    """This View is never reached manually, it is automatically populated with information from CreateFriendRequest View with the requester: the current user and recipient: a string denoting the name of the user that is requested to be added as a friend"""
-    
-    template = ''
-    context_object_name = 'request_record'
-    form_class = FriendRequestSubmissionForm
-    
-    
-    
-    def __init__(self,*args, **kwargs):
-        super(CreateFriendRequestView, self).__init__(*args, **kwargs)
-        #TODO Change success url to more relevant page
-        success_url = reverse_lazy('home')    
-    
-        class Meta:
-            model = FriendRequest
-            fields = ('requester', 'request_target')   
-    
-    def generate_request(self, requester_user_account:SolutionUser, recipient_username:str):
-        """Generates a new Friend Request Record. Takes recipientname:string and checks/operates to create a new friendrequest record \n Returns True is successful"""
-        try:       
-            # get current users profile
-            user_profile = SolutionUserProfile.objects.get(user=requester_user_account)
-            
-            #  get recipient profile 
-            recipient_account = SolutionUser.objects.get(username=recipient_username)
-            recipient_profile = SolutionUserProfile.objects.get(user = recipient_account)
-            
-            # Determine if record doesnt already exists, and if recipient is not already a friend
-            if not FriendRequest.objects.filter(requester=user_profile, recipient = recipient_profile, request_state=False) and not user_profile.check_friends(recipient_username):
-                    
-                # if not Create a draft record
-                draft_request = FriendRequest(requester=user_profile, recipient = recipient_profile)
-            
-                # Save result
-                draft_request.save()
-            else:
-                #Return false if active friend requests already exists for the two users
-                return False
-        
-        except print("An error has occured during request generation"):
-           return False
- 
-
-        return True
-    
-    
-    def form_valid(self, form):
-        # When form is submitted and valid
-        if form.is_valid():
-           
-            # Generate new friend request
-            self.generate_request(self.request.user,form.cleaned_data['request_target'])
-            
-        return super.form_valid(form)
-    
-  
-# Friend Functionality 
-class ViewFriendRequest(DetailView,LoginRequiredMixin):
-    """View The Request for friendship and allow user to accept or decline the request"""
-    template = ''
-    context_object_name = 'request_record'
-    model = FriendRequest
-    def accept(self):
-        pass
-    def decline(self):
-        pass
-    
-class ViewFriendRequests(ListView, LoginRequiredMixin):
-    template = ''
-    context_object_name = 'request_records'
-    
-
-        

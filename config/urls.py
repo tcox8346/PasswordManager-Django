@@ -32,7 +32,7 @@ urlpatterns = [
     #Password  Generator App
     path('<str:user>/', include('PasswordGenerator.urls')),
     # Friend functionality App
-    #path('<str:user>/friends/', include('UserManagement.urls')),
+    path('<str:user>/', include('FriendFunctionality.urls')),
     
     #Single Sign On App
 ]

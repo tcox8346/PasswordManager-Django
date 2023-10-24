@@ -64,23 +64,29 @@ class PasswordGeneration(models.Model):
     #@ this function is to be expanded to function with mutiple differing apis, as some return json objects in differing orders and content lables
     def get_API_request_json(self, API_Service:str, word:str, key:str):
         """ fetches api request when provided a string that denotes the api service - provided in the class as a key-value, the word to search, and a access key \n
-        Returns a json object if call response is valid ie 200 , otherwise return None"""
-        print(f'conducting api call: {url}')
+        Returns a json object if call response is valid ie 200 and if the response json has the key 'meta' , otherwise return None"""
         try:
-            # Define a api request 
-            url = API_Service + "/" + word + '/' + key
-            print(f'conducting api call: {url}')
-            API_Request = requests.get(url)
-            
-            if API_Request.status_code != 200:
-                raise Exception
+            API_Service = API_Service.lower()
+            if APPROVED_SERVICES_API_ROOTS[API_Service]:
+                #create a api request  using the root of the request and adding the neccessary portions based on the api
+                api_call_url = APPROVED_SERVICES_API_ROOTS[API_Service] +  word + '?key=' + key
+                api_response = requests.get(api_call_url)
+                print(f'url : {api_call_url}')
+                print(f'API response = {api_response.status_code}')
+                # if call returns a response
+                if api_response.status_code == 200:
+                    #if response exist return json object
+                    if 'meta' in api_response.json()[0]: 
+                        return api_response.json()
+                    
+                #raise exception  if the above arent valid
+                else:
+                    raise Exception
 
-       
         except Exception:
-            print(f"An error has occured during the process of calling the API Request: \nRequest{url}")
-        
-        # return the request
-        return API_Request
+           #if an error occures return None
+           print('An error has occured while retrieving the response')
+           return None
     #@ This function is to be expanded to swap functionality upon thesaurus or dictionary usage
     #Updates dictionary and the words related to the dictionary, assuming the core word can be added
     def update_dictionaries(self, new_word:str, API_Key_Dictionary:str, API_Key_Thesaurus:str, API_Service:str ='websterdictionary', API_Service_Helper = 'websterthesaurus' , b_remove = False):
@@ -93,12 +99,8 @@ class PasswordGeneration(models.Model):
                 #determine if word exists
                 api_dictionary_json:list|None = self.get_API_request_json(API_Service, new_word, API_Key_Dictionary)
                 if api_dictionary_json == None:
-                    print('Response return invalid')
+                    print('Response return invalid - word not found in dictionary')
                     raise Exception
-                if 'meta' not in api_dictionary_json[0]:
-                    print('Response return invalid- no meta key found')
-                    raise Exception
-                    
                     
             except Exception:
                 print("An Error has occured during the proccess of getting the API request")
@@ -106,51 +108,55 @@ class PasswordGeneration(models.Model):
         
             # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
             try:
-                print('meta found in response json')
-                core_words = self.list_core_words()
-                core_words.append(new_word) 
-                #Add related words to related dictionary
-                try: 
-                    # get api response for words related to the new word
-                    api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
-                    
-                    if api_thesuraus_json:  
-                        # create list of found related words                    
-                        try:
-                            collection_of_antonyms = []
-                            #if list containing antynoyms of word exists; add words to related words
-                            if len(api_thesuraus_json[0]['meta']['ants']) > 0:
-                                if type(api_thesuraus_json[0]['meta']['ants']) == list:
-                                    for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
-                                        #if word in antynyms not blank add to possible words 
-                                        if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
-                                            collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index] + ',')
-                                else:
-                                    print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
-                                
-                                
-                        except print("An Error has occured while deriving list of antonyms from json response, this segment is skipped"):
-                            raise Exception
+
+                    core_words = self.list_core_words()
+                    core_words.append(new_word) 
+                    #Add related words to related dictionary
+                    try: 
+                        # get api response for words related to the new word
+                        api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
+                        
+                        if api_thesuraus_json:  
+                             
                             
-                        try:
-                            collection_of_synonyms = []
-                                #if list containing synonyms of word exists add words to related words
-                            if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
-                                if type(api_thesuraus_json[0]['meta']['syns']) == list:
-                                    for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
-                                        if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
-                                            collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index] + ',') 
-                                        
-                            #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
-                        except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
-                            raise Exception
-                        
-                    else:
-                        print('No json response for thesuarus of provided word found')
-                        
-                except Exception:
-                    print('An error has occured while defining thesuarus values')
-                    return
+                            # Create a list of antonomys words                  
+                            try:
+                                collection_of_antonyms = []
+                                response_antonyms = api_thesuraus_json[0]['meta']['ants']
+                                # reevaluate to inner list if provided response is a double layers list
+                                if type(response_antonyms[0]) == list :
+                                    response_antonyms = response_antonyms[0]
+                                #if list containing antynoyms of word exists; add words to related words
+                                if len(response_antonyms) > 0:
+                                    for word in response_antonyms:
+                                        #if word in antynyms not blank add to possible words 
+                                        if  word != '': collection_of_antonyms.append(word + ',')
+                                    
+                            except print("An Error has occured while deriving list of antonyms from json response"):
+                                raise Exception
+                            # Create a collection of synonmous words 
+                            try:
+                                collection_of_synonyms = []
+                                response_synonyms = api_thesuraus_json[0]['meta']['syns']
+                                # reevaluate to inner list if provided response is a double layers list
+                                if type(response_synonyms[0]) == list :
+                                    response_synonyms = response_synonyms[0]
+                                #if list containing antynoyms of word exists; add words to related words
+                                if len(response_synonyms) > 0:
+                                    for word in response_synonyms:
+                                        #if word in antynyms not blank add to possible words 
+                                        if  word != '': collection_of_synonyms.append(word + ',')
+                                            
+                                #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
+                            except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
+                                raise Exception
+                            
+                        else:
+                            print('No json response for thesuarus of provided word found')
+                            
+                    except Exception:
+                        print('An error has occured while defining thesuarus values')
+                        return
             except Exception:
                 print("An error has occured while fetching data")
                 return False
@@ -166,10 +172,8 @@ class PasswordGeneration(models.Model):
                 for word_index in range(len(API_response_related_words)):
                     #if word exists in either set of used words or is blank skip it
                     if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
-                        print(f'word found that already exists{API_response_related_words[word_index]}')
                         continue
                     free_random_words.append(API_response_related_words[word_index])
-                print('Successful creation of free random words \n {free_random_words}') 
 
                 # Remove words with blank spaces present
                 free_random_words_no_spaces = []
@@ -177,12 +181,10 @@ class PasswordGeneration(models.Model):
                     if " " in word:
                         continue
                     free_random_words_no_spaces.append(word)
-                print(f'Successful removal of white spaces \n {free_random_words_no_spaces}') 
 
-                #remove trailing , from word
+                #remove trailing ','(comma) from word
                 for word_index in range(len(free_random_words_no_spaces)):
                     free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
-                print(f'Successful removal of trailing commas\n {free_random_words_no_spaces}') 
                 
                 free_random_words = free_random_words_no_spaces
                 # if the list of words that can be added is greater then 0
@@ -201,7 +203,6 @@ class PasswordGeneration(models.Model):
                         print(f'current free random words :{free_random_words}')
                         
                         
-                    print('Successful selection of free random words') 
                     #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
                     for word in chosen_words:
                         if word == '' or word in related_words:
@@ -235,36 +236,41 @@ class PasswordGeneration(models.Model):
             api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper,new_word,API_Key_Thesaurus)
             if api_thesuraus_json is not None:  
                 
-                # create list of found antonyms                    
-                collection_of_antonyms = []
                 try:
-                        #if list containing antynoyms of word exists; add words to related words
-                    if  api_thesuraus_json[0]['meta']['ants'] and len(api_thesuraus_json[0]['meta']['ants']) > 0:
-                        if type(api_thesuraus_json[0]['meta']['ants']) == list:
-                            for word_index in range(len(api_thesuraus_json[0]['meta']['ants'][0])):
-                                #if word in antynyms not blank add to possible words 
-                                if api_thesuraus_json[0]['meta']['ants'][0][word_index] != '':
-                                    collection_of_antonyms.append(api_thesuraus_json[0]['meta']['ants'][0][word_index])
-                        else:
-                            print(f"api_thesuraus_json[0]['meta']['ants'] is not of type list\n" )
+                     # create list of found antonyms                    
+                    collection_of_antonyms = []
+                    response_antonyms = api_thesuraus_json[0]['meta']['ants']
+                    # reevaluate to inner list if provided response is a double layers list
+                    if type(response_antonyms[0]) == list :
+                        response_antonyms = response_antonyms[0]
+                    #if list containing antynoyms of word exists; add words to related words
+                    if len(response_antonyms) > 0:
+                        for word in response_antonyms:
+                            #if word in antynyms not blank add to possible words 
+                            if  word != '': collection_of_antonyms.append(word + ',')
                             
                 except Exception:
                     print("An Error has occured while deriving list of antonyms from json response, this segment is skipped")
                     return False
-                # create list of found synonyms    
-                collection_of_synonyms = []
+       
                 try:
-                    #if list containing synonyms of word exists add words to related words
-                    if len(api_thesuraus_json[0]['meta']['syns'][0]) > 0:
-                        if type(api_thesuraus_json[0]['meta']['syns']) == list:
-                            for word_index in range(len(api_thesuraus_json[0]['meta']['syns'][0])):
-                                if api_thesuraus_json[0]['meta']['syns'][0][word_index] != '':
-                                    collection_of_synonyms.append(api_thesuraus_json[0]['meta']['syns'][0][word_index]) 
+                    # create list of found synonyms    
+                    collection_of_synonyms = []
+                    response_synonyms = api_thesuraus_json[0]['meta']['syns']
+                    # if double layers list - reevaluate to inner list 
+                    if type(response_synonyms[0]) == list :
+                        response_synonyms = response_synonyms[0]
+                    #if list containing antynoyms of word exists; add words to related words
+                    if len(response_synonyms) > 0:
+                        for word in response_synonyms:
+                            #if word in antynyms not blank add to possible words 
+                            if  word != '': collection_of_synonyms.append(word + ',')
+                                            
                                 
                 except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
                     raise Exception
                 
-                # remove all synonyms and antynyms  from related words
+                # remove all synonyms and antonyms from users related words
                 collection_of_related_words = collection_of_synonyms + collection_of_antonyms
                 new_related_list = []
                 print(collection_of_related_words)
@@ -275,7 +281,7 @@ class PasswordGeneration(models.Model):
                 #convert result into csv form and set models related value to it
                 self.dictionaryRelated = self.convert_to_csv(new_related_list)
                 
-                #remove word from models core word csv and set model core to new list 
+                #remove target word from models core word csv and set model core to new list 
                 new_core = []
                 for word in self.list_core_words():
                     if new_word in word:
@@ -301,25 +307,34 @@ class PasswordGeneration(models.Model):
                 return True
         # otherwise return false
         return False
-    #@ Remove the target word from users dictionaries
-    def remove_word(self, word:str, dictionary:list):
-        """Removes word from a list excluding trailing ',' : input is a list of strings with no trailing commas"""
-        result:list = []
-        for word in dictionary:
-            if word == '' or word in dictionary:
-                continue
-            result.append(word)
-        return result
+    #@ Remove the target word from users dictionaries:list
+    def remove_word(self, words:list|str, dictionary:list):
+        """Removes a word or list of words from a list excluding trailing ',' : input is a list of strings with no trailing commas"""
         
-    #@ Select a set number of words from related dictionary
+        result:list = []
+        # if input is a string instead of a list
+        if type(words) == str:
+            for word_dict in dictionary:
+                if word_dict == '' or words == word_dict:
+                    continue
+            result.append(word_dict)
+        else:
+            for dict_words in dictionary:
+                if dict_words == '' or dict_words in words:
+                    continue
+                result.append(dict_words)
+        return result     
+    #@ Select a set number of words from the users related dictionary
     def select_related_words(self, word_count):
+        # define the list
         dictionary_list = re.split(',', self.dictionaryRelated)
-        selected_words = []
+        selected_words:list = []
+        # select a random word from list
         for i in range(word_count):
             random_int = randint(0, len(dictionary_list))
             if dictionary_list[random_int] not in selected_words : 
                 selected_words += dictionary_list[random_int]
-        return selected_words 
+        return selected_words
     def convert_to_csv(self,list_of_words):
         """Convert list into csv string, list taken in must not have values with trailing commas"""
         #convert new corewords list into csv
@@ -328,7 +343,7 @@ class PasswordGeneration(models.Model):
             new_csv += word + ','
         return new_csv   
     #@ Generate a new string based on a the related words - embeds non special characters within the string
-    def generate_string(self, minimum_size=20, maxiumum_size=60, minimum_related_words=2):
+    def generate_string(self, minimum_size=10, maxiumum_size=60, minimum_related_words=2):
         try:
             # require min to be atleast 2x less than max
             if (minimum_size * 3) >  maxiumum_size:

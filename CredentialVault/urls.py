@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CredentialCreateView, CredentialDetailView, CredentialDeleteView, CredentialUpdateView, CredentialListView, ApplyKeyView
+from .views import CredentialCreateView, CredentialDetailView, CredentialDeleteView, CredentialUpdateView, CredentialListView
 urlpatterns = [
     #Every url begins with <str:username>
     path('', CredentialListView.as_view(), name ='credential_list'),

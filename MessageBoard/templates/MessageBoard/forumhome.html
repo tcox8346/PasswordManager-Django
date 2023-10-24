@@ -13,11 +13,11 @@
                 <i class="fas fa-h3"> <a href = {% url 'post_new' %}> Create a Post <a/></i>
             {% endif %}
         </div>
-
+        <br>
         {% if all_Posts %}
             {% for post in all_Posts %}
                 <div class ="position-relative top-0 start-50 translate-middle-x" > 
-                    <nav> {{post.author}}</nav>
+                    <nav> {{post.author.username}}</nav>
                     <a href = {% url 'post_detail' post.pk %}><nav> {{post.title}}</nav></a>
                     <nav> {{post.body}}</nav>
                 </div> 

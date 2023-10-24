@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'CredentialVault',
     'PasswordGenerator',
     
+    'FriendFunctionality',
     # Community Apps
         #SSO functionality
 
@@ -139,6 +140,10 @@ LOGIN_REDIRECT_URL = 'forumhome'
 LOGOUT_REDIRECT_URL = 'home'
 
 
+# PROFILE FUNCTIOANLITY
+USER_PROFILE_MODEL = "UserManagement.SolutionUserProfile"
+# Frind Functionality
+USER_FRIEND_SYSTEM = "FriendFunctionality.FriendList"
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #Email verification Code

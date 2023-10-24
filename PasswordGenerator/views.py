@@ -91,35 +91,59 @@ class TestAPIView(TemplateView):
     
     def get_context_data(self, **kwargs: Any):
         #Test Dictionary Response
-        self.TESTWORD = 'golf'
-        self.PasswordGenerator = PasswordGeneration.objects.get(owner=self.request.user)
-        
-        if self.PasswordGenerator != None:
-            #test dictionary response
-            #API_from_model = self.PasswordGenerator.Test_API_Call(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
-            API_from_model = self.PasswordGenerator.get_API_request_json(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
-            context = super(TestAPIView, self).get_context_data()
+        self.TESTWORD = 'Do'
 
-            context['api_json_list_full'] = []
-            context['api_json_synonyms'] = []
-            context['api_json_antonyms'] = []
-            # if api call successful return nothing
-            if API_from_model:  
-                parsed_json_list = API_from_model
-                #Testing - Accessing Dictionary data from response
+        if  not PasswordGeneration.objects.filter(owner=self.request.user).exists():
+            print("User not found - Test API View")
+            return context
+        
+        # Test response
+
+        PasswordGenerator_instance =  PasswordGeneration.objects.get(owner=self.request.user)
+
+        API_from_model = PasswordGenerator_instance.get_API_request_json(API_SERVICES[1], self.TESTWORD, APIKEYS_WEBSTER['thesuarus'])
+        
+        context = super(TestAPIView, self).get_context_data()
+        context['api_json_list_full'] = []
+        context['api_json_topic'] = []
+        context['api_json_synonyms'] = []
+        context['api_json_antonyms'] = []
+        
+        # if api call successful
+        if API_from_model:  
+            parsed_json_list = API_from_model
+            #Testing - Accessing Dictionary data from response
+            
+            # Testing - if meta isnt in json request then word doesnt exists or there are no related words for it
+            if 'meta' in parsed_json_list[0]: 
                 
-                if 'meta' in parsed_json_list[0]: 
-                    if type(parsed_json_list[0]['meta']['syns']) == list :
-                        print(f"json response using 0 meta ,syns, 0 as key {parsed_json_list[0]['meta']['syns'][0]}")
-                        if len(parsed_json_list[0]['meta']['syns']) > 0:
-                            context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
-                    if type(parsed_json_list[0]['meta']['ants']) == list :
-                        print(f"json response using 0 meta ,ants as key {parsed_json_list[0]['meta']['ants']}")
-                        if len(parsed_json_list[0]['meta']['ants']) > 0:
-                            context['api_json_synonyms'] = parsed_json_list[0]['meta']['syns'][0]
-                context['api_json_list_full'] = parsed_json_list 
-        else:
-            print(f"{self.request.user.username} user not found")
+                # Select Topic Word
+                print(f"Topic :{parsed_json_list[0]['meta']['id']}")
+                context['api_json_topic']  = parsed_json_list[0]['meta']['id']
+                
+                # Select synonyms from provided response
+                
+                synonyms = parsed_json_list[0]['meta']['syns']
+                if synonyms:
+                    # correct synonyms refernce if provided double layer list 
+                    if type(synonyms[0]) == list:
+                        synonyms =  synonyms[0]
+                    print(f"json response using 0 meta ,syns, 0 as key {synonyms}")
+                    if len(synonyms) > 0:
+                        context['api_json_synonyms'] = synonyms
+                
+                # Select antonyms from provided response
+                antonyms = parsed_json_list[0]['meta']['ants'] 
+                if antonyms :
+                    # determine if antonym list is single layer 
+                    if type(antonyms[0]) == list:
+                        antonyms =  antonyms[0]
+                    if len(antonyms) > 0:
+                        context['api_json_antonyms'] = antonyms
+                        print(f"json response using 0 meta ,ants as key {antonyms}")
+            
+            context['api_json_list_full'] = parsed_json_list 
+
         return context
 class TestFlushView(RedirectView, LoginRequiredMixin):
     

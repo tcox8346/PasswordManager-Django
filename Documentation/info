@@ -27,3 +27,13 @@ Information Resources
     Requirements to remember:
         For api consumption
         install requests library in ve
+
+
+    
+    Friend App Setup
+    https://www.youtube.com/watch?v=hyJO4mkdwuM
+
+    Django Auto Slug Library - Model Level Automatic Slug Generation
+    python -m pip install django-autoslug
+
+    
