@@ -1,24 +1,32 @@
+from typing import Any
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import FriendRequest, FriendList
-from django.views.generic import FormView, DetailView,ListView
+from django.views.generic import FormView, DetailView,ListView, View
 from .forms import FriendRequestForm_CheckUsername
 
 from django.contrib.auth import get_user_model
 # Todo - find approach to decoucple direct model imports
 from UserManagement.models import SolutionUserProfile
 
-#from .forms import FriendRequestSubmissionForm
+# JSON Functionality
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 # Create your views here.
 # Friend Functionality 
-class ViewFriendList(DetailView, LoginRequiredMixin):
+class ViewFriendListHome(DetailView, LoginRequiredMixin):
     template_name = 'FriendFunctionality/friend_list_detail.html'
     context_object_name = 'friend_record'
     model = FriendList
     
+            
     def get_queryset(self):
         return super().get_queryset()
+    
+    
     
 class CreateFriendRequestView(LoginRequiredMixin, FormView):
     """This View is never reached manually, it is automatically populated with information from CreateFriendRequest View with the requester: the current user and recipient: a string denoting the name of the user that is requested to be added as a friend"""
@@ -83,23 +91,52 @@ class CreateFriendRequestView(LoginRequiredMixin, FormView):
     def get_success_url(self):
             # Redirect to detail view when complete
         return reverse_lazy('user_friend_list', kwargs={'user': self.request.user, 'slug': self.request.user.slug})
-class ViewFriendRequest(DetailView,LoginRequiredMixin):
-    """View The Request for friendship and allow user to accept or decline the request"""
-    template_name = 'FriendFunctionality/friend_request.html'
-    context_object_name = 'request_record'
-    model = FriendRequest
-    
-    
-    def accept(self):
-        pass
-    def decline(self):
-        pass
     
 class ViewFriendRequests(ListView, LoginRequiredMixin):
     template_name = 'FriendFunctionality/all_friend_requests.html'
     context_object_name = 'request_records'
     model = FriendRequest
-
-   
-
     
+    def get_context_data(self, **kwargs: Any):
+        context = super().get_context_data(**kwargs)
+        user_profile = SolutionUserProfile.objects.get(user= self.request.user)
+        context['request_results'] = FriendRequest.objects.filter(request_target = user_profile, request_state = False).all()
+        context['user_requests'] = FriendRequest.objects.filter(requester = user_profile, request_state = False).all()
+        
+        return context
+#@csrf_exempt
+def ProcessFriendRequest(request, user, slug, pk, uservalue, data):
+    """View The Request for friendship and allow user to accept or decline the request"""
+    request_instance = FriendRequest.objects.get(pk=pk)
+    request_instance.process_request(uservalue)
+     
+    return JsonResponse(statues=200 )
+
+# Class View Version of process friend request
+
+# @ decorator to ignore need for csrf_token - rework in working version to csrf token when called
+#@method_decorator(csrf_exempt, name='dispatch')
+class ProcessFriendRequestClassView(View, LoginRequiredMixin):
+    
+    def __init__(self, *args,**kwargs: Any):
+        super().__init__(*args, **kwargs)
+        
+        
+    # code that handles post requests   
+    def post(self, request, *args, **kwargs):
+        self.generate_response(*args,**kwargs)
+        return HttpResponse("complete")
+
+    def generate_response(self, *args, **kwargs):
+        
+        
+        if  self.request.method == "POST":    
+            """View The Request for friendship and allow user to accept or decline the request"""
+            self.instance_pk = kwargs['pk']
+            self.instance_uservalue = bool(kwargs['uservalue'])
+            request_instance = FriendRequest.objects.get(pk= self.instance_pk)
+            self.current_user_profile = SolutionUserProfile.objects.get(user=self.request.user)
+            process_result = request_instance.process_request(self.instance_uservalue, self.current_user_profile)
+        else:
+            return HttpResponseBadRequest('Invalid request')
+        

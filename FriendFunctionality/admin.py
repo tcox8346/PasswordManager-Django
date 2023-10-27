@@ -12,11 +12,14 @@ class FriendListAdmin(admin.ModelAdmin):
     # Function that retrieves username from the objects stored owner profile
     def get_username(self, obj):
         return obj.owner_profile.user.username
-    get_username.short_description = 'profile_owner'
-    get_username.admin_order_field = 'profile__UserAccount'
+    def get_friends(self,obj):
+        friend_names = []
+        for friend in obj.friends_list.all():
+            friend_names.append(friend.user.username)
+        
+        return friend_names
     
-    def get_friends(self, obj):
-        return "\n".join([p.products for p in obj.friends_list.all()])
+
 class FriendRequestAdmin(admin.ModelAdmin):
     list_filter = ['requester', 'request_target']
     list_display = ['requester', 'request_target']

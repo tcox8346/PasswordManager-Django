@@ -2,53 +2,163 @@
 
 {% block title %} {{user.username}} Friends Requests  {% endblock title %}
 {% block Body %}
-    <!--Profile  Markup-->
+        <!--Profile  Markup-->
 
-{% if request_records %}{% endif %}
-       
- {% block Friend_Funcationilty_Requests %}
- 
-    <div>
-        <a href = {% url "make_friend_request" user.slug %}> Add A Friend Now </a>
-    </div>
- 
- {% endblock Friend_Funcationilty_Requests %}   
- 
-
- {% block test %}
- <i class="fas fa-h3    "> TEST Pending Requests</i>
-    {% for record in request_records %}
-    
-      <!--Display Record Details if request is active for multiple records -->
-        <div>
-            <ul class="list-group list-group-horizontal">
-                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.requester}} </i></li>
-                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.request_datetime}} </i></li>
-            </ul>
-        </div>        
-    {% endfor %}
-    <br>
- {% endblock test %}
-
- {% block active_friend_request %}
- <i class="fas fa-h3    "> Pending Requests</i>
-    {% for record in request_records %}
-    
-      <!--Display Record Details if request is active for multiple records -->
-        {% if record.request_state == False %}
-        <div>
-            <ul class="list-group list-group-horizontal">
-                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.requester.user.username}} </i></li>
-                <li class="list-group-item"><i class="fas fa-h2    ">{{request_record.request_datetime}} </i></li>
-            </ul>
-        </div>        
+    {% if request_records %}{% endif %}
         
-        {% endif %}
-    {% endfor %}
- 
- {% endblock active_friend_request %}
+    {% block Friend_Funcationilty_Requests %}
+    
+        <div>
+            <a href = {% url "make_friend_request" user.slug %}> Add A Friend Now </a>
+        </div>
+    
+    {% endblock Friend_Funcationilty_Requests %}   
+
+
+    {% block pending_requests %}
+        {% block security %}
+            {% csrf_token %}
+        {% endblock security %}
+
+    <i class="fas fa-h3    ">  Pending Requests</i>
+    <!--Display Each Records Details  -->
+        {% for record in request_records %}
+        <!--if the requester is not the user -->
+            {% if record.requester.user != user  and record.request_state == False%}
+                <!--Display Record Details if request is active for multiple records -->
+
+                <div id= '{{record.id}}' >
+                    <ul class="list-group list-group-horizontal">
+                        <li class="list-group-item"><i class="fas fa-h2    ">{{record.requester.user.username}} </i></li>
+                        <li class="list-group-item"><i class="fas fa-h2    ">{{record.request_datetime}} </i></li>
+                        <li class="list-group-item"> <a name="" id="" class="btn btn-primary accept_btn_request"  href="#" data-view = '{% url "process_request" user user.slug record.id 1 %}' role="button">Accept</a></li>
+                        <li class="list-group-item"> <a name="" id="" class="btn btn-primary decline_btn_request" href="#" data-view = '{% url "process_request" user user.slug record.id 0 %}' role="button">Decline</a></li>
+                    </ul>
+                </div>        
+            
+            {% endif %}
+        
+        {% endfor %}
+        <br>
+    {% endblock pending_requests %}
+
+    {% block active_friend_request %}
+        <i class="fas fa-h3    "> Active Requests</i>
+        
+        <!--Display Record Details if request is active for multiple records -->
+        {% for record in user_requests %}
+        <!--if the requester is user -->
+            
+            <!--Track instance identifier -->
+            <div id= '{{record.id}}'>
+                <ul class="list-group list-group-horizontal">
+                    <li class="list-group-item"><i class="fas fa-h2    ">{{record.request_target.user.username}} </i></li>
+                    <li class="list-group-item"><i class="fas fa-h2    ">{{record.request_datetime}} </i></li>
+                    <li class="list-group-item"> <a name="" id="" class="btn btn-primary decline_btn_request" href="#" data-view = '{% url "process_request" user user.slug record.id 0 %}' role="button">Cancel</a></li>
+                </ul>
+            </div>        
+        {% endfor %}       
+
+    {% endblock active_friend_request %}
+
+
+    {% block scripts %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js" type="text/javascript"></script>
+        <script >
+
+        // Request Functions
+        function accept_request_friend(url, csrf_token) {      
+           
+        }
+
+        function decline_request_friend(view, csrf_token) {
+            //Create a new connection with server
+            const xhttp = new XMLHttpRequest();
+
+            // open call to friendrequest instance function via url
+            xhttp.open("POST", view);
+            xhttp.send();
+
+            
+        }
+        //TODO
+        function cancel_request_friend(view, csrf_token) {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onclick = function() {
+            document.getElementById("demo").innerHTML = this.responseText;
+            }
+            xhttp.open("POST", "ajax_info.txt", true);
+            xhttp.send();
+        }
+        
+        //Document Assignment
+        // On Document Ready Populate 
+        $(document).ready(function(){
+
+            // For each element meant to act as a accept request button 
+            $(".accept_btn_request").each(function(){
+                // add accept functionality
+
+                $(this).click(function(){
+
+                    let instance_id = $(this).parent().parent().parent().attr('id')
+                    console.log(`Accepte button clicked ID: ${instance_id}`);
+                    var view_url = $(this).attr('data-view')
+                    console.log(`Accepte button clicked URL: ${view_url}`);
+                    
+                    $.ajaxSetup({ data: {csrfmiddlewaretoken: '{{ csrf_token }}' },});
+                    //accept_request_friend(view_url, csrf_instance);
+                    $.ajax({
+                        
+                        url: view_url, 
+                        type: "POST",
+                        
+                        data: {csrfmiddlewaretoken: '{{ csrf_token }}',
+                                "X-Requested-With": "XMLHttpRequest", 
+                    
+                    
+                        },
+                        dataType: 'json',
+                        success: function () {
+                            console.log("done");
+                        }
+                      });
+                });
+            });
+
+            // For each element meant to act as a decline request button 
+            $(".decline_btn_request").each(function(){
+                // add accept functionality
+
+                $(this).click(function(){
+
+                    let instance_id = $(this).parent().parent().parent().attr('id')
+                    console.log(`Decline button clicked ID: ${instance_id}`);
+                    var view_url = $(this).attr('data-view')
+                    console.log(`Decline button clicked URL: ${view_url}`);
+                });
+            });
+            // For each element meant to act as a cancel request button 
+            $(".cancel_btn_request").each(function(){
+                // add accept functionality
+
+                $(this).click(function(){
+
+                    let instance_id = $(this).parent().parent().parent().attr('id')
+                    console.log(`cancel button clicked ID: ${instance_id}`);
+                    var view_url = $(this).attr('data-view')
+                    console.log(`cancel button clicked URL: ${view_url}`);
+                    
+                });
+            })
+                
+        });
+
+        </script> 
+    {% endblock scripts %}
 {% endblock Body %}
 
 {% block Foot %}
 
 {% endblock Foot %}
+

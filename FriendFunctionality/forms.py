@@ -1,6 +1,7 @@
+from typing import Any
 from django.forms import ModelForm, CharField, Form, ValidationError
 from django.contrib.auth import get_user_model
-
+from .models import FriendRequest
     
    
 def UserExists_Validatior(value):
@@ -17,3 +18,4 @@ class FriendRequestForm_CheckUsername(Form):
     """Form that Recieves a username in string format and returns valid if user exists"""
     requested_user = CharField(label='User Nane',max_length=100, required=True, empty_value='', strip=True,  validators = ([UserExists_Validatior]))
    
+# TODO

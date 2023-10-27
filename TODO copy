@@ -3,10 +3,7 @@ Password Generator
     x - Register and Implement API keys for Standard API Dictionary - merian-webster
      Enable production methods of adding and removing words from list
   
-UserManagement
-    Implement means of deactivating users authentication token when user changes Password
-    Implement means of resetting password by sending confirmation email and requiring users key(which is sent with the registration email during the proccess of account creation and activation)
-    Implement Method that sends email to users when a token has been successfully reset
+
 
 CSS
     Style all templates to have main content be centered on PasswordGenerator
@@ -59,11 +56,23 @@ AJAX
         Functions are to be defined in one standalone script and imported to html pages that require them
 
 
+TODO LIST
+    General System Setup
+        Enforce HTTPS
+        Store Server Key in enviorment variable
+        Store server key at rest in auxilarry file - encrpted
+        Setup Public Facing Server
+        Name url domain - Credentialales.stu
 
-        Current Progress
-        10-25-2023
+    UserManagement
+        Implement means of deactivating users authentication token when user changes Password
+        Implement means of resetting password by sending confirmation email and requiring users key(which is sent with the registration email during the proccess of account creation and activation)
+        Implement Method that sends email to users when a token has been successfully reset
+
     FriendFunctionality
-        Creating AJAX DJANGO functionality to accept/decline a friend request
-            The implementation uses a js function attached to buttons on "D:\PythonDjango\PasswordVault\FriendFunctionality\templates\FriendFunctionality\all_friend_requests.html"
-            and auto fills out the path using jquery(this) to get the button instance and its instance attributes to use in url 
-             current made accept, decline, and cancel request json functions , attached to buttons via jquery->ready 
+        Ability To Request User To FriendShip - X
+        Ability To Accept or Decline User Friendship Request 
+        Set Up Signal that activates when a user accepts or declines a friend request - For Usage by other apps
+        Setup Friend Request urls and templates
+        Setup Friend Accept , decline and cancel request javascripts
+            issue - $(document) does not populate buttons excluding the first 

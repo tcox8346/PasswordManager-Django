@@ -3,18 +3,22 @@
 {% block title %} {{user.username}} FriendsList  {% endblock title %}
 {% block Body %}
     <!--Profile  Markup-->
-   
-     <!--Display List of friends usernames -->
-     {% for friend in friend_record.friends_list.all %}
-        <!--Directs To Friend Options - Remove Friend-->
-        <div>
-            <a href = '#'> {{friend.user.username}} </a>
-        </div>
-     
-     {% endfor %}
-
-
     
+
+    <!--Display List of friends usernames -->
+  
+    <!--Directs To Friend Options - Remove Friend-->
+    <div class="list-group">
+
+        <ul class="list-group">
+            {% for friend in friend_record.friends_list.all %}
+            <li class="list-group-item">{{friend.user.username}}</li>
+            {% endfor %}
+            </ul>
+    </div>
+        
+    <br>
+        
     
  {% block Friend_Funcationilty_Requests %}
  
