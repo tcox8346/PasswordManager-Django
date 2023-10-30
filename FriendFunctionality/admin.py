@@ -22,11 +22,15 @@ class FriendListAdmin(admin.ModelAdmin):
 
 class FriendRequestAdmin(admin.ModelAdmin):
     list_filter = ['requester', 'request_target']
-    list_display = ['requester', 'request_target']
+    list_display = ['get_username', 'get_request_target']
     search_fields = [' requester__username', 'request_target__username']
     class Meta:
      model = FriendRequest
-     
+    
+    def get_username(self, obj):
+        return obj.requester.user.username
+    def get_request_target(self, obj):
+        return obj.request_target.user.username
      
      
 admin.site.register(FriendList, FriendListAdmin)

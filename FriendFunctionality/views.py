@@ -11,7 +11,7 @@ from UserManagement.models import SolutionUserProfile
 
 # JSON Functionality
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
-
+import json
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
@@ -104,17 +104,31 @@ class ViewFriendRequests(ListView, LoginRequiredMixin):
         context['user_requests'] = FriendRequest.objects.filter(requester = user_profile, request_state = False).all()
         
         return context
+
+
+
 #@csrf_exempt
-def ProcessFriendRequest(request, user, slug, pk, uservalue, data):
+def ProcessFriendJSONRequest(request, *args, **kwargs):
     """View The Request for friendship and allow user to accept or decline the request"""
-    request_instance = FriendRequest.objects.get(pk=pk)
-    request_instance.process_request(uservalue)
+    
+    # if ajext request 
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        print("A JSON Request has been made")
+        jsonData = json.loads(request.body)
+        user = jsonData.get('user_instance')
+        user_response = jsonData.get('user_response')
+        request_instance = jsonData.get('request_id')
+
+        print(f"Values in body:\n {user}, \n{request_instance}, \n{user_response}\n")
+        is_success ={"successes?": None}
+        return JsonResponse({'successful_execution': is_success})
+
      
     return JsonResponse(statues=200 )
 
-# Class View Version of process friend request
 
-# @ decorator to ignore need for csrf_token - rework in working version to csrf token when called
+
+# Class View Version of process friend request
 #@method_decorator(csrf_exempt, name='dispatch')
 class ProcessFriendRequestClassView(View, LoginRequiredMixin):
     
@@ -122,21 +136,54 @@ class ProcessFriendRequestClassView(View, LoginRequiredMixin):
         super().__init__(*args, **kwargs)
         
         
+    
     # code that handles post requests   
     def post(self, request, *args, **kwargs):
-        self.generate_response(*args,**kwargs)
-        return HttpResponse("complete")
-
+        # if ajext request 
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            print("Call properly recieved")
+            result = self.generate_response()
+        return JsonResponse({'response': result}, status = 200)
+    
+    # determine what actions are to be enacted on model instance
     def generate_response(self, *args, **kwargs):
-        
-        
         if  self.request.method == "POST":    
             """View The Request for friendship and allow user to accept or decline the request"""
-            self.instance_pk = kwargs['pk']
-            self.instance_uservalue = bool(kwargs['uservalue'])
-            request_instance = FriendRequest.objects.get(pk= self.instance_pk)
-            self.current_user_profile = SolutionUserProfile.objects.get(user=self.request.user)
-            process_result = request_instance.process_request(self.instance_uservalue, self.current_user_profile)
+            
+            
+            #Get the instance information for processing
+            instance_pk = self.request.POST.get('request_id')
+            # get friend request instance
+            request_instance = FriendRequest.objects.get(pk=instance_pk)
+            
+            # check if purpose of response is to cancel request
+            purpose = self.request.POST.get('purpose')
+            print(purpose)
+             # get the current users profile
+            current_user_profile = SolutionUserProfile.objects.get(user = self.request.user)
+            if purpose == 'cancel_request':
+                request_instance.cancel_request(current_user_profile)
+            
+            else:
+                # get user response boolean by converting userresponse string to its interger form, then to its boolean form
+                instance_uservalue = bool(int(self.request.POST.get('user_response')))
+                # process the request 
+                request_instance.process_request(instance_uservalue, current_user_profile, False)
+            return True
         else:
-            return HttpResponseBadRequest('Invalid request')
+            # if the request isnt post return false
+            return False
         
+# Testing Views
+class AJAXConnectionTestingView(View):
+    def __init__(self, *args,**kwargs: Any):
+        super().__init__(*args, **kwargs)
+        
+        
+    # code that handles post requests   
+    def get(self, request, *args, **kwargs):
+        # if ajext request 
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'message': 'Successful Call with AJAX'})
+        
+        return JsonResponse({'message': 'call made'})

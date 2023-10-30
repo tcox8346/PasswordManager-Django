@@ -84,9 +84,11 @@ class FriendRequest(models.Model): # Server Based Encryption
      return reverse("request_detail", kwargs={"pk": self.pk})
     
     # This classes functions all work on the premise of user profiles
-    def process_request(self, is_accepted:bool, current_user_profile:SolutionUserProfile):
+    def process_request(self, is_accepted:bool, current_user_profile:SolutionUserProfile, testing = False):
         """Accepts a boolean and the user profile of the current user. \n Results in the manipulation of both the recipient and requesting user profiles friends list being updated if boolean is True \n This action is taken by the recipient of the request"""
-
+        
+        if testing:
+            print(f"{is_accepted}, {current_user_profile == self.request_target}")
             
         if type(is_accepted) == bool and current_user_profile == self.request_target:
             # Get references to both user profiles connected friendslist
@@ -132,9 +134,12 @@ class FriendRequest(models.Model): # Server Based Encryption
             self.request_response = is_accepted
             self.request_state = True
             self.save()
+            
+            if testing == True:
+                print(f'instance {self.pk}: modified')
             # If no errors have occured return True for complete status
             return 1
-    def cancel_request(self, requester:SolutionUserProfile):
+    def cancel_request(self, requester:SolutionUserProfile, testing = False):
         #TODO Decouple into own app   
 
         """Cancels request, This action is taken by the requester"""
@@ -143,10 +148,14 @@ class FriendRequest(models.Model): # Server Based Encryption
             # set request state to inactive
             self.request_state = 1
         
+        if testing:
+            print('request cancelation in progress')
         # save cancel state change
-        self.save(commit = True)
-        # return value designating operation success
+        self.save()
+        if testing:
+           print('request cancelation complete')
         
+        # return value designating operation success
         return 1
 
    

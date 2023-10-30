@@ -2,36 +2,60 @@
 
   function accept_request_friend(view) {      
 
-    //Create a new connection with server
-    const xhttp = new XMLHttpRequest();
-    xhttp.onclick = function() {
-      // open call to friendrequest instance function via url
-      xhttp.open("POST", view);
-      xhttp.send();
-      };
+    $.ajax({
+      url: view, 
+      type: "POST",
+      headers: 
+          {
+          "X-Requested-With": "XMLHttpRequest",
+          'X-CSRFToken': csrftoken,
+          mode: 'same-origin'
+          },
+      data: {  'purpose': 'accept_request', 'request_id': instance_id, 'user_response':'1', 'user_instance': '{{user}}'},
+      dataType: 'json',
+      success: function () {
+          console.log("done");
+      }
+  });
     
   }
 
   function decline_request_friend(view) {
-    //Create a new connection with server
-    const xhttp = new XMLHttpRequest();
-    xhttp.onclick = function() {
-      // open call to friendrequest instance function via url
-      xhttp.open("POST", view);
-      xhttp.send();
-    };
+    $.ajax({
+      url: view, 
+      type: "POST",
+      headers: 
+          {
+          "X-Requested-With": "XMLHttpRequest",
+          'X-CSRFToken': csrftoken,
+          mode: 'same-origin'
+          },
+      data: {  'purpose': 'decline_request', 'request_id': instance_id, 'user_response':'0', 'user_instance': '{{user}}'},
+      dataType: 'json',
+      success: function () {
+          console.log("done");
+      }
+    });
     
   }
 //TODO
-  function cancel_request_friend(view) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onclick = function() {
-      document.getElementById("demo").innerHTML = this.responseText;
+function cancel_request_friend(view) {
+    $.ajax({
+      url: view, 
+      type: "POST",
+      headers: 
+          {
+          "X-Requested-With": "XMLHttpRequest",
+          'X-CSRFToken': csrftoken,
+          mode: 'same-origin'
+          },
+      data: {  'purpose': 'cancel_request', 'request_id': instance_id, 'user_response':'NONE', 'user_instance': '{{user}}'},
+      dataType: 'json',
+      success: function () {
+          console.log("done");
       }
-    xhttp.open("POST", "ajax_info.txt", true);
-    xhttp.send();
+    });
   }
-
 
 
   

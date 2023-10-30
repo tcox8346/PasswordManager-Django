@@ -4,19 +4,16 @@
 {% block Body %}
     <!--Profile  Markup-->
     
-
     <!--Display List of friends usernames -->
-  
     <!--Directs To Friend Options - Remove Friend-->
-    <div class="list-group">
+    <div class="list-group" id="friend_listing_div">
 
         <ul class="list-group">
             {% for friend in friend_record.friends_list.all %}
             <li class="list-group-item">{{friend.user.username}}</li>
             {% endfor %}
             </ul>
-    </div>
-        
+    </div>  
     <br>
         
     
