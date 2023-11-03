@@ -89,7 +89,7 @@ class SolutionUser(AbstractUser, PermissionsMixin): # Server Based Encryption
         try:
             
             # generate a new key combo that is unique
-            secret_key = self.generate_free_key()
+            secret_key = self.generate_free_key(KEY_SIZE)
 
             counter = 0 
             while SolutionUser.objects.filter(key=secret_key).exists() and counter < 5:
