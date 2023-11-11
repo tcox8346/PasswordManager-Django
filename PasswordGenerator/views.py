@@ -46,7 +46,7 @@ class UpdateDictionaryFormView(FormView, LoginRequiredMixin):
     
     #@ TODO - On Form Submission - Call methods on users PasswordGeneration object
     def form_valid(self, form: Any):
-        password_generator:PasswordGeneration = PasswordGeneration.objects.filter(owner=self.request.user,)
+        password_generator:PasswordGeneration = PasswordGeneration.objects.get(owner=self.request.user,)
         # - check if user submitted word is can be added to core dictionary
         print('password_generator retrieved')
         if password_generator.bCan_add_word(form.cleaned_data['word']):
@@ -75,9 +75,9 @@ class GeneratePasswordView(RedirectView, LoginRequiredMixin):
         self.url = reverse_lazy('generator_home', kwargs={'user': self.request.user.username})
         try:
             #Generate a random password using the users password manager
+            
             password_generator = PasswordGeneration.objects.get(owner=self.request.user)
             generated_password = password_generator.generate_string()
-            print(f'generated value: {generated_password}')
             # store generated value in users session - this is shown on users home settings template
             self.request.session['recent_password_generated'] = generated_password
         except:

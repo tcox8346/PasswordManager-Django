@@ -2,8 +2,7 @@ Version 0.03
 Currently Reworked friendship functionality to be part of UserManagement app - The functions are unimplemented and requires urls,views and setup
 
 Friend Functionality Not Fully Functionality    
-    FriendList Display Needs To Be Completed
-    Add and Remove Friend Functionaility needs completion
+    FriendList Display Needs To Be Reorganized
 
 Security
     Basic Field Encrpytion Needs to be implemented - Server Key To User Table Fields : username , email 
@@ -12,5 +11,7 @@ Security
 
 
 Friend Functionaility
-    Added javascript functionality for template "all_friend_requests.html" focused on accepting and declining friend ship request made to user
+    Added javascript ajax functionality for template "all_friend_requests.html" focused on accepting and declining friend ship request made to user, and canceling request made by the user
         - This purpose is to have dynamic acceptance/declining without redirection.
+
+            -. Next make a div under the initial friend request page that loads the other friend related pages in div. 

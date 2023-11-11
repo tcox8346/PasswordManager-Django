@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,6 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-469=ewrtbr4oaxg3-il^ueozd5&o3k3-608p9gw=7=k$7=-79q'
+FERNET = b'wYZlyHsW-Qyq_h_2nw8Vjv6Quhoe1sBECrgDfS6xI2E='.decode()
+os.environ["SECRET"] = SECRET_KEY
+os.environ["Fernet"] = FERNET
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -142,7 +145,7 @@ LOGOUT_REDIRECT_URL = 'home'
 
 # PROFILE FUNCTIOANLITY
 USER_PROFILE_MODEL = "UserManagement.SolutionUserProfile"
-# Frind Functionality
+# Friend Functionality
 USER_FRIEND_SYSTEM = "FriendFunctionality.FriendList"
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

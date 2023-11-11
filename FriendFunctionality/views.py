@@ -10,10 +10,8 @@ from django.contrib.auth import get_user_model
 from UserManagement.models import SolutionUserProfile
 
 # JSON Functionality
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+from django.http import JsonResponse
 import json
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 
 # Create your views here.
 # Friend Functionality 
@@ -25,8 +23,6 @@ class ViewFriendListHome(DetailView, LoginRequiredMixin):
             
     def get_queryset(self):
         return super().get_queryset()
-    
-    
     
 class CreateFriendRequestView(LoginRequiredMixin, FormView):
     """This View is never reached manually, it is automatically populated with information from CreateFriendRequest View with the requester: the current user and recipient: a string denoting the name of the user that is requested to be added as a friend"""
@@ -126,7 +122,25 @@ def ProcessFriendJSONRequest(request, *args, **kwargs):
      
     return JsonResponse(statues=200 )
 
-
+def processFriendRemoval(request, *args, **kwargs):
+    """View request that enables the removal of a friend from the authenticated users friends list"""
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # load json request data
+        jsonData = json.loads(request.body)
+        # get user instance from request
+        user = jsonData.get('user_instance')
+        # get name of user to remove  from freinds lst of user instance
+        user_response = jsonData.get('user_to_remove')
+        # get user profile and remove 
+        user_profile = SolutionUserProfile.objects.filter(user)
+        if user_profile.exists():
+            #check if user friend list exists
+            user_friendlist = FriendList.objects.filter(owner_profile = user_profile)   
+            if user_friendlist.exists():
+                #remove the friend from friends list
+                user_friendlist.remove_friend(user_response)       
+        is_success ={"successes?": None}
+        return JsonResponse({'successful_execution': is_success})
 
 # Class View Version of process friend request
 #@method_decorator(csrf_exempt, name='dispatch')

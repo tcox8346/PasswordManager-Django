@@ -3,10 +3,7 @@ Password Generator
     x - Register and Implement API keys for Standard API Dictionary - merian-webster
      Enable production methods of adding and removing words from list
   
-UserManagement
-    Implement means of deactivating users authentication token when user changes Password
-    Implement means of resetting password by sending confirmation email and requiring users key(which is sent with the registration email during the proccess of account creation and activation)
-    Implement Method that sends email to users when a token has been successfully reset
+
 
 CSS
     Style all templates to have main content be centered on PasswordGenerator
@@ -56,14 +53,42 @@ General
 
 AJAX 
     Set up javscript/jqeury script to enable single page updating of user credential list without reloading a webpage.
-        Functions are to be defined in one standalone script and imported to html pages that require them
+        Functions are to be defined in one standalone script and imported to html pages that require them - Complete at later date
 
 
+TODO LIST
+    General System Setup
+        Enforce HTTPS
+        Setup Public Facing Server
+        Name url domain - Credentsails.stu
 
-        Current Progress
-        10-25-2023
-    FriendFunctionality
-        Creating AJAX DJANGO functionality to accept/decline a friend request
-            The implementation uses a js function attached to buttons on "D:\PythonDjango\PasswordVault\FriendFunctionality\templates\FriendFunctionality\all_friend_requests.html"
-            and auto fills out the path using jquery(this) to get the button instance and its instance attributes to use in url 
-             current made accept, decline, and cancel request json functions , attached to buttons via jquery->ready 
+    UserManagement
+        Implement means of deactivating users authentication token when user changes Password - X
+        Implement Method that sends email to users when a token has been successfully reset 
+
+    FriendFunctionality - 
+        Ability To Request User To FriendShip - X
+        Ability To Accept or Decline User Friendship Request - X
+        Set Up Signal that activates when a user accepts or declines a friend request - For Usage by other apps - O
+        Setup Friend Request urls and templates - X
+        Setup Friend Accept , decline and cancel request javascripts - X
+            issue - $(document) does not populate buttons excluding the first 
+
+    Encryption
+        - Setup Server Encryption - Encrypt all data at rest 
+        - Setup User Information Encrpytion (Private information - encrypted using the users key found in the Solution user table)
+        - Setup Friend Information Encrpytion (Shared information - encrypted using the users shared key found key found in the Solution user profile table)
+        - Setup Friend Information Decryption (Shared information - decrypted using the shared key of the required friend profile found in the Solution user profile table: note, access should be in dictionary format)
+    
+    Setup Server For Public Testing
+        - https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Deployment
+
+        - Store server key in a password locked and/or encrypted file
+            - Load Server key in enviorment variable or server only file for server access example: settings.py; SECRET_KEY = os.environ['SECRET_KEY'] or # open('/etc/secret_key.txt') as f: SECRET_KEY = f.read().strip()
+        - configure and replace email functionality to public service
+        - Set DEBUG mode to false
+
+
+    10/30/2023 - 11/4/2023
+        Setup At rest encryption
+            

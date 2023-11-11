@@ -17,18 +17,14 @@ from autoslug import AutoSlugField
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
-#Find way to implement safe guard for importing
-#modules_to_import = [re]
-#for module in modules_to_import:
-#    if module not in sys.modules:
-#        import module
-
-#Global Constants
 
 
 # custom fields - Profile
-from .fields import KEY_SIZE
-   
+
+#encryption
+from .fields import KEY_SIZE #, EncryptedText_Private, EncryptedField_Char, EncryptedField_EmailField
+# encryption - server key
+
 
 # models
 class SolutionUserManager(UserManager):
@@ -204,11 +200,17 @@ class Token(models.Model):
         return
    
 class SolutionUserProfile(models.Model): # Server - User Based Encrpytion
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    
     user = models.OneToOneField(get_user_model(), related_name='profile_owner', on_delete=models.CASCADE)
     image = models.ImageField(blank=True,upload_to=None, height_field=20, width_field=20, max_length=None)
     
-    shared_key = models.CharField(blank=True, max_length=KEY_SIZE, default='') # A Encryption key used to encrypt and decrypt Credential Records marked as shared by the user, 256 byte key    
-    shared_keys = models.TextField(default='',unique=False) # A Dictionary in csv form . example : "username=value, username=value,..."         #@ Encrypt
+    # $ Encrypted using Server key
+    shared_key = models.CharField(max_length=KEY_SIZE) # A Encryption key used to encrypt and decrypt Credential Records marked as shared by the user, 256 byte key    
+    # $ Encrypted using user key
+    shared_keys = models.TextField(blank=True,default="" ) # A Dictionary in csv form . example : "username=value, username=value,..."         #@ Encrypt
     
     slug = models.SlugField(default='', unique=True)
 
@@ -228,7 +230,6 @@ class SolutionUserProfile(models.Model): # Server - User Based Encrpytion
         self.image = image
         print(f'user: {self.user.get_username()} has updated their image')  
         return    
-
     def generate_key(self):
         # generate a new key combo that is unique
         new = secrets.token_hex(KEY_SIZE) 
@@ -248,11 +249,40 @@ class SolutionUserProfile(models.Model): # Server - User Based Encrpytion
         return secrets.token_hex(KEY_SIZE)
     def get_shared_key(self):
         return self.shared_key
+    def get_user_key(self):
+        return self.user.get_key()
 
-    # Signals
+    
+    
+    
+    
+# Signals
 @receiver(post_save, sender=SolutionUser)
 def create_profile(sender, instance=None, created=False, **kwargs):
     if created:
         SolutionUserProfile.objects.create(user=instance)
         print(f"user{instance.username} profile created")
         
+"""
+Encrpytion Based Functionality
+@receiver(post_save, sender=SolutionUserProfile)
+def on_profile_creation(sender, instance=None, created=False, **kwargs):
+    if created:
+        update_encryption_keys_on_creation(instance)
+    instance.save() 
+ 
+def update_encryption_keys_on_creation(instance=None):
+    if instance == None:
+        return
+    instance_object = SolutionUserProfile.objects.get(instance)
+    instance_user_key = instance_object.user.key
+    instance_object.shared_keys = EncryptedText_Private(instance_user_key)    
+"""      
+
+
+
+
+
+
+
+

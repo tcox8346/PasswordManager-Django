@@ -34,7 +34,7 @@ class PasswordGeneration(models.Model):
     minimum_words = models.IntegerField(default=3)
     minimum_numbers = models.IntegerField(default=3)
     minimum_special_characters = models.IntegerField(default=3)
-
+    
 
     class Meta:
         verbose_name = ("passwordgenerators")
@@ -71,17 +71,18 @@ class PasswordGeneration(models.Model):
                 #create a api request  using the root of the request and adding the neccessary portions based on the api
                 api_call_url = APPROVED_SERVICES_API_ROOTS[API_Service] +  word + '?key=' + key
                 api_response = requests.get(api_call_url)
-                print(f'url : {api_call_url}')
-                print(f'API response = {api_response.status_code}')
+                #print(f'url : {api_call_url}')
+                #print(f'API response = {api_response.status_code}')
                 # if call returns a response
                 if api_response.status_code == 200:
                     #if response exist return json object
                     if 'meta' in api_response.json()[0]: 
+                        print()
                         return api_response.json()
                     
                 #raise exception  if the above arent valid
                 else:
-                    raise Exception
+                    raise Exception 
 
         except Exception:
            #if an error occures return None
@@ -93,6 +94,7 @@ class PasswordGeneration(models.Model):
         """Update user password generator model dictionary values- only functions with single words"""
         bword_can_be_added = self.bCan_add_word(new_word)
         api_dictionary_json = None
+        # if word can be added attempt to add word to core list
         if b_remove == False and bword_can_be_added:
             print('Attempting to add word')
             try:
@@ -100,54 +102,37 @@ class PasswordGeneration(models.Model):
                 api_dictionary_json:list|None = self.get_API_request_json(API_Service, new_word, API_Key_Dictionary)
                 if api_dictionary_json == None:
                     print('Response return invalid - word not found in dictionary')
-                    raise Exception
-                    
+                    return True
             except Exception:
                 print("An Error has occured during the proccess of getting the API request")
                 return False
         
             # if word exists aka statues code returned and meta in response , add to core words (this function assumes a validity check has been completed)
             try:
-
+                    # get current list of core words
                     core_words = self.list_core_words()
-                    core_words.append(new_word) 
+                    # add new word to list 
+                    core_words.append(new_word)
+                    # convert list to csv form and store in database
+                    self.dictionaryCore = self.convert_to_csv(core_words)
+                    
+
                     #Add related words to related dictionary
                     try: 
                         # get api response for words related to the new word
                         api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)  
                         
                         if api_thesuraus_json:  
-                             
-                            
-                            # Create a list of antonomys words                  
+                            # Attempt to add related antonymous words to related words list                 
                             try:
-                                collection_of_antonyms = []
-                                response_antonyms = api_thesuraus_json[0]['meta']['ants']
-                                # reevaluate to inner list if provided response is a double layers list
-                                if type(response_antonyms[0]) == list :
-                                    response_antonyms = response_antonyms[0]
-                                #if list containing antynoyms of word exists; add words to related words
-                                if len(response_antonyms) > 0:
-                                    for word in response_antonyms:
-                                        #if word in antynyms not blank add to possible words 
-                                        if  word != '': collection_of_antonyms.append(word + ',')
-                                    
+                                self.__related_add_antonyms(api_thesuraus_json)
+
                             except print("An Error has occured while deriving list of antonyms from json response"):
                                 raise Exception
-                            # Create a collection of synonmous words 
+                            # Attempt to add related synonoymous words to related words list                 
                             try:
-                                collection_of_synonyms = []
-                                response_synonyms = api_thesuraus_json[0]['meta']['syns']
-                                # reevaluate to inner list if provided response is a double layers list
-                                if type(response_synonyms[0]) == list :
-                                    response_synonyms = response_synonyms[0]
-                                #if list containing antynoyms of word exists; add words to related words
-                                if len(response_synonyms) > 0:
-                                    for word in response_synonyms:
-                                        #if word in antynyms not blank add to possible words 
-                                        if  word != '': collection_of_synonyms.append(word + ',')
-                                            
-                                #print(f'Antonyms and synonyms derived from thesuarus are {API_response_related_words}\n ')
+                                self.__related_add_synonyms(api_thesuraus_json)
+                                pass
                             except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
                                 raise Exception
                             
@@ -160,138 +145,16 @@ class PasswordGeneration(models.Model):
             except Exception:
                 print("An error has occured while fetching data")
                 return False
-            #$ Determine related words that can be added to related words list - This variant ignores entries with blank spaces
-            try:
-                # determine list of words that dont exists in core or related that exists in list of synonyms and antynyms
-                API_response_related_words = collection_of_antonyms + collection_of_synonyms
-                free_random_words = []
-                related_words = self.list_related_words()
-                
-                print(f'code : \n {API_response_related_words} \n {related_words}')
-                
-                for word_index in range(len(API_response_related_words)):
-                    #if word exists in either set of used words or is blank skip it
-                    if API_response_related_words[word_index] == '' or API_response_related_words[word_index] in core_words or API_response_related_words[word_index] in related_words:
-                        continue
-                    free_random_words.append(API_response_related_words[word_index])
-
-                # Remove words with blank spaces present
-                free_random_words_no_spaces = []
-                for word in free_random_words:
-                    if " " in word:
-                        continue
-                    free_random_words_no_spaces.append(word)
-
-                #remove trailing ','(comma) from word
-                for word_index in range(len(free_random_words_no_spaces)):
-                    free_random_words_no_spaces[word_index] = free_random_words_no_spaces[word_index].replace(',','')
-                
-                free_random_words = free_random_words_no_spaces
-                # if the list of words that can be added is greater then 0
-                chosen_words = []
-                if len(free_random_words) > 0:
-                    print('entering loop for selecting random words')
-                    #select  up to 3 random words from the list, take them from the list and add them to desired related words to append
-                    for i in range(3):
-                        if len(free_random_words) <= 0:
-                            print('length reduced to 0, breaking out of loop')
-                            break
-                        print(f'Length of random selection {len(free_random_words)}')
-                        random_selection = randint(0, len(free_random_words)-1)
-                        chosen_words.append(free_random_words.pop(random_selection))
-                        print(f'current chosen words : {chosen_words} index is {i}')
-                        print(f'current free random words :{free_random_words}')
-                        
-                        
-                    #append selected words to related words in csv - in this case the dictionary ends with a , already and the api results also end with ,
-                    for word in chosen_words:
-                        if word == '' or word in related_words:
-                            continue
-                        related_words.append(word)
-                        self.dictionaryRelated += word + ','
-                    
-                    
-                    #if core words is empty assign new was as initial core word, otherwise append new core word to core words
-                    if self.dictionaryCore == '':
-                        self.dictionaryCore = core_words[0]
-                    else:         
-                        #convert new corewords list into csv | and store in dictionary core                 
-                        self.dictionaryCore = self.convert_to_csv(core_words)
-                    self.save()
-                    return True
-
-                else:
-                    print('No words could be added to related words: found to all exists already')
-                    
-            except Exception:
-                print('An error has occured while correcting the users dictionaries')
-                return False
-            else:
-                print('Custom Word support is currently not functional')
-            return True
-        # Otherwise, if the goal is to remove a word from core 
-        else:
             
-            # get all synonyms and antonyms of word
-            api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper,new_word,API_Key_Thesaurus)
-            if api_thesuraus_json is not None:  
-                
-                try:
-                     # create list of found antonyms                    
-                    collection_of_antonyms = []
-                    response_antonyms = api_thesuraus_json[0]['meta']['ants']
-                    # reevaluate to inner list if provided response is a double layers list
-                    if type(response_antonyms[0]) == list :
-                        response_antonyms = response_antonyms[0]
-                    #if list containing antynoyms of word exists; add words to related words
-                    if len(response_antonyms) > 0:
-                        for word in response_antonyms:
-                            #if word in antynyms not blank add to possible words 
-                            if  word != '': collection_of_antonyms.append(word + ',')
-                            
-                except Exception:
-                    print("An Error has occured while deriving list of antonyms from json response, this segment is skipped")
-                    return False
-       
-                try:
-                    # create list of found synonyms    
-                    collection_of_synonyms = []
-                    response_synonyms = api_thesuraus_json[0]['meta']['syns']
-                    # if double layers list - reevaluate to inner list 
-                    if type(response_synonyms[0]) == list :
-                        response_synonyms = response_synonyms[0]
-                    #if list containing antynoyms of word exists; add words to related words
-                    if len(response_synonyms) > 0:
-                        for word in response_synonyms:
-                            #if word in antynyms not blank add to possible words 
-                            if  word != '': collection_of_synonyms.append(word + ',')
-                                            
-                                
-                except print("An Error has occured while deriving list of synonyms from json response, this segment is skipped"):
-                    raise Exception
-                
-                # remove all synonyms and antonyms from users related words
-                collection_of_related_words = collection_of_synonyms + collection_of_antonyms
-                new_related_list = []
-                print(collection_of_related_words)
-                for used_word in self.list_related_words():
-                    if used_word not in collection_of_related_words:
-                        new_related_list.append(used_word)
-
-                #convert result into csv form and set models related value to it
-                self.dictionaryRelated = self.convert_to_csv(new_related_list)
-                
-                #remove target word from models core word csv and set model core to new list 
-                new_core = []
-                for word in self.list_core_words():
-                    if new_word in word:
-                        continue
-                    new_core.append(word)
-                if len(new_core) == 0:
-                    self.dictionaryCore = ''
-                self.dictionaryCore = self.convert_to_csv(new_core)
-                #save result
-                self.save()
+            # Determine related words that can be added to related words list - This variant ignores entries with blank spaces
+            api_dictionary_json:list|None = self.get_API_request_json(API_Service_Helper, new_word, API_Key_Thesaurus)
+            #self.__related_add_antonyms(api_dictionary_json)
+            #self.__related_add_synonyms(api_dictionary_json)
+        # Otherwise, if the goal is to remove a word from core 
+        else:    
+            pass
+        # save changes to model instance
+        self.save()
         return True                                                
     #@ Confirm if word can be added to dictionary core- size check and existence check
     def bCan_add_word(self, newWord):
@@ -307,8 +170,9 @@ class PasswordGeneration(models.Model):
                 return True
         # otherwise return false
         return False
+    # TO BE IMPLEMENTED ##############################################################
     #@ Remove the target word from users dictionaries:list
-    def remove_word(self, words:list|str, dictionary:list):
+    def remove_core_word(self, words:list|str, dictionary:list):
         """Removes a word or list of words from a list excluding trailing ',' : input is a list of strings with no trailing commas"""
         
         result:list = []
@@ -323,18 +187,65 @@ class PasswordGeneration(models.Model):
                 if dict_words == '' or dict_words in words:
                     continue
                 result.append(dict_words)
-        return result     
+        return result    
+    # remove related words attributed to core word from related words dictionary
+    def remove_related_words(self, core_word, API_Service_Helper,API_Key_Thesaurus):
+        api_thesuraus_json:list|None = self.get_API_request_json(API_Service_Helper, core_word, API_Key_Thesaurus) 
+         
+        # check if json response has sub key "ants" in "meta"
+        if "ants" in api_thesuraus_json[0]["meta"].keys():
+            response_ants = api_thesuraus_json[0]["meta"]['ants']
+            # check if antnyms length is greater than 0
+            if len(response_ants) > 0:
+                # determine if result is a single layer list 
+                try:
+                    # if not make subject list the inner single layer list
+                    if type(response_ants[0]) == list:
+                        response_ants = response_ants[0]
+                except Exception:
+                    pass 
+                # remove up to 3 instances of the related if they exists in the related dictionary
+                removed_count = 0
+                related_words = self.list_related_words()
+                for i in range(len(response_ants)):
+                    if response_ants[i] in related_words and removed_count < 3:
+                        removed_count += 1
+                        related_words.pop(response_ants[i])
+     
+        # check if json response has sub key "syns" in "meta"
+        if "syns" in api_thesuraus_json[0]["meta"].keys():
+            response_syns = api_thesuraus_json[0]["meta"]['syns']
+            # check if antnyms length is greater than 0
+            if len(response_syns) > 0:
+                # determine if result is a single layer list 
+                try:
+                    # if not make subject list the inner single layer list
+                    if type(response_syns[0]) == list:
+                        response_syns= response_syns[0]
+                except Exception:
+                    pass 
+                # remove up to 3 instances of the related if they exists in the related dictionary
+                removed_count = 0
+                related_words = self.list_related_words()
+                for i in range(len(response_syns)):
+                    if response_syns[i] in related_words and removed_count < 3:
+                        removed_count += 1
+                        related_words.pop(response_syns[i])
+    ################################################################################## 
     #@ Select a set number of words from the users related dictionary
     def select_related_words(self, word_count):
-        # define the list
-        dictionary_list = re.split(',', self.dictionaryRelated)
-        selected_words:list = []
-        # select a random word from list
-        for i in range(word_count):
-            random_int = randint(0, len(dictionary_list))
-            if dictionary_list[random_int] not in selected_words : 
-                selected_words += dictionary_list[random_int]
-        return selected_words
+        try:
+            # define the list
+            dictionary_list = re.split(',', self.dictionaryRelated)
+            selected_words:list = []
+            # select a random word from list
+            for i in range(word_count):
+                random_int = randint(0, len(dictionary_list))
+                if dictionary_list[random_int] not in selected_words : 
+                    selected_words += dictionary_list[random_int]
+            return selected_words
+        except Exception:
+            print("An error has occured during the selection of related words")
     def convert_to_csv(self,list_of_words):
         """Convert list into csv string, list taken in must not have values with trailing commas"""
         #convert new corewords list into csv
@@ -344,96 +255,230 @@ class PasswordGeneration(models.Model):
         return new_csv   
     #@ Generate a new string based on a the related words - embeds non special characters within the string
     def generate_string(self, minimum_size=10, maxiumum_size=60, minimum_related_words=2):
-        try:
-            # require min to be atleast 2x less than max
-            if (minimum_size * 3) >  maxiumum_size:
-                raise('Max size must be atleast 3x larger then minumum size')
-            #create a string that will be output by call
-            string_result = ''
-            #create a list of numbers to use
-            numbers = []
-            for i in range(self.minimum_numbers):
-                numbers.append(randint(0,9))
-            # create a list of special characters to use 
-            special_characters_ascii = []
-            for i in range(self.minimum_special_characters):
-                special_characters_ascii.append(chr(randint(58,64))) 
-        except Exception:
-            print('Exception raised during checking phase of generate_string - generating special characters')
+        # if the user password generator instance has 3 or more words 
+        print(len(self.list_core_words()))
+        if len(self.list_related_words()) >= 3:
+            related_words = self.list_related_words()
+            # select up to from 2 to 3 of the words from the list randomly
+            words = []
+            for i in range(randint(2,3)):
+               choice = randint(0, len(related_words)-1)
+               count = 0
+               while related_words[choice] in words:
+                    choice = randint(0, len(related_words)-1)
+                    count += 1
+                    if count > 5:
+                        break
+               words.append(related_words[choice]) 
             
-        try:
-            # if the word count in related words is less than 10 - generate a non human memorable string: fully random 
-            if len(self.list_related_words()) < 10:
-                print(f'GenerateString-> randomstring being generated ')
-                #generete random string of minimum length  
-                for i in range(minimum_size):
-                    #randomly select a value that designates the type of character to use
-                    random_value = randint(0,2)
-                    if random_value == 0:
-                        #if random value is 0 select a random alphabetical character
-                        #select capital or lowercase 
-                        choice = randint(0,1)
-                        if choice == 0:
-                            random_char = chr(randint(65,90))
-                        else:
-                            random_char = chr(randint(97,122))
-                    #if random value is 1 select a character between the first half of special characters
-                    elif random_value == 1:
-                        random_char = chr(randint(33,39))  
-                    # otherwise select a random character from the second half of special characters
-                    else:
-                        random_char = chr(randint(59,64)) 
-                        
-                    # after selecting a random character add it to output string
-                    string_result+= random_char
-                return string_result
-            else:
-                # otherwise select the minimum amount of required words from related dictionary
-                related_words_list = self.list_related_words()
-                related_word_selection = []
-                while len(related_word_selection) < minimum_related_words:
-                    random_int = randint(0, len(related_words_list))
-                    #Add word to list of related words selected if not already present
-                    if related_words_list[random_int] not in related_word_selection:
-                        related_word_selection.append(related_words_list[random_int])
+            print(f"selected words : {words}")
+            # alter each word in the sublist in some form
+            results = []
+            for word in words:
+                choice = randint(0,3)
+                # alter by adding a number to the end
+                if choice == 0 :
+                    result = word + str(randint(0,9))
+                    results.append(result)
                     
-                #when selected words are generated, populate the string result  with random values inside the string including the selected words
-                #* for this implementation it is assumed that a related word is the first substring in the string
-                #randomly select a related word from the list of words previosly selected 
-                random_char = related_word_selection[0,randint(len(related_word_selection))]  
-            #remove selected word from list
-            related_word_selection.remove(random_char) 
-            string_result+= random_char 
+                # alter by adding a special character to the end
+                if choice == 1 :
+                    result = word +chr(randint(33,45))   
+                    results.append(result)             
+                # alter by replacing a value with a number
+                elif choice == 2 :
+                    result = ""
+                    replace_index = randint(0, len(word)-1)
+                    
+                    for i in range(len(word)):
+                        if i == replace_index:
+                            result += str(randint(0,9))
+                        else:
+                            result += word[i] 
+                    results.append(result)               
+                # alter by replacing a value with a special character
+                else :
+                    result = ""
+                    replace_index = randint(0, len(word)-1)
+                    
+                    for i in range(len(word)):
+                        if i == replace_index:
+                            result += chr(randint(33,45))
+                        else:
+                            result += word[i]     
+                    results.append(result)
                 
-            #while the string result is under the minimum size and there are words that need to be used
-            while True:
-                #randomly select a value that designates the type of character to use
-                random_value = randint(0,10)
-                if random_value >= 3:
-                    #if random value is 0 select a random special character
-                    random_char = special_characters_ascii[randint(0, len(special_characters_ascii))]
-                #if random value is is from 3 to 6
-                elif 3 > random_value <= 6:
-                    random_char = numbers[randint(0,len(numbers))] 
+            # combine words into a single string
+            final_result = ""
+            for word in results:
+                for char in word:
+                    final_result += char
+            # remove all blank spaces from word
+            final_result = final_result.replace(" ","")
+            # post processing check - confirm password requirements are met
+            
+            # atleast 1 special character 
+            spc_count = 0
+            num_count = 0
+            for i in range(33,46):
+                if chr(i) in final_result:
+                    spc_count += 1
+            # atleast 1 numeral
+            for i in range(0,10):
+                if str(i) in final_result:
+                    num_count += 1
+            
+            # if less then the required amount, insert the required amount randomly inside the result
+            if spc_count < 3:
+                post_processed_result = ""
+                current_index = 0
+                final_result_index = 0
+                insert_spc = 3 - spc_count
+                random_inserts = []
+                for i in range(insert_spc):
+
+                    random_index = randint(0, len(final_result))
+                    #if the index is already in the array calculate a new one
+                    while random_index in random_inserts:
+                        random_index = randint(0, len(final_result)-1)
+
+                    # add random index to list 
+                    random_inserts.append(random_index)
+                # extend final result by inserting random special characters in the randomily decided indexs
+                while len(post_processed_result) < len(final_result) + insert_spc:
+                    if current_index in random_inserts:
+                        post_processed_result += chr(randint(33,45)) 
+                        current_index += 1
+                        continue
+                    post_processed_result += final_result[final_result_index]
+                    final_result_index += 1
+                    current_index += 1
+                final_result = post_processed_result    
+            #repeat process defined above for numerals 
+                                # if less then the required amount, insert the required amount randomly inside the result
+            if num_count < 3:
+                print(f"num count is {num_count}")
+                post_processed_result = ""
+                current_index = 0
+                final_result_index = 0
+                insert_num = 3 - num_count
+                random_inserts = []
+                for i in range(insert_num):
+                    random_index = randint(0, len(final_result)-1)
+                    #if the index is already in the array calculate a new one
+                    while random_index in random_inserts:
+                        random_index = randint(0, len(final_result)-1)
+                    # add random index to list 
+                    random_inserts.append(random_index)
+                # extend final result by inserting random special characters in the randomily decided indexs
+                while len(post_processed_result) < len(final_result) + insert_num:
+                    if current_index in random_inserts:
+                        post_processed_result += str(randint(0,9)) 
+                        current_index += 1
+                        continue
+                    
+                    post_processed_result += final_result[final_result_index]
+                    
+                    final_result_index += 1
+                    current_index += 1
+                final_result = post_processed_result    
+
+            return final_result
+        #####################
+                
+        else:
+            try:
+                print("random password generation")
+                # require min to be atleast 2x less than max
+                if (minimum_size * 3) >  maxiumum_size:
+                    raise('Max size must be atleast 3x larger then minumum size')
+                #create a string that will be output by call
+                print("1")
+                string_result = ''
+                #create a list of numbers to use
+                numbers = []
+                for i in range(self.minimum_numbers):
+                    numbers.append(randint(0,9))
+                # create a list of special characters to use 
+                special_characters_ascii = []
+                for i in range(self.minimum_special_characters):
+                    special_characters_ascii.append(chr(randint(58,64))) 
+            except Exception:
+                print('Exception raised during checking phase of generate_string - generating special characters')
+                
+            try:
+                print("2")
+                # if the word count in related words is less than 10 - generate a non human memorable string: fully random 
+                if len(self.list_related_words()) < 10:
+                    #generete random string of minimum length  
+                    for i in range(minimum_size):
+                        #randomly select a value that designates the type of character to use
+                        random_value = randint(0,2)
+                        if random_value == 0:
+                            #if random value is 0 select a random alphabetical character
+                            #select capital or lowercase 
+                            choice = randint(0,1)
+                            if choice == 0:
+                                random_char = chr(randint(65,90))
+                            else:
+                                random_char = chr(randint(97,122))
+                        #if random value is 1 select a character between the first half of special characters
+                        elif random_value == 1:
+                            random_char = chr(randint(33,39))  
+                        # otherwise select a random character from the second half of special characters
+                        else:
+                            random_char = chr(randint(59,64)) 
+                            
+                        # after selecting a random character add it to output string
+                        string_result+= random_char
+                    return string_result
                 else:
+                    # otherwise select the minimum amount of required words from related dictionary
+                    related_words_list = self.list_related_words()
+                    related_word_selection = []
+                    while len(related_word_selection) < minimum_related_words:
+                        random_int = randint(0, len(related_words_list))
+                        #Add word to list of related words selected if not already present
+                        if related_words_list[random_int] not in related_word_selection:
+                            related_word_selection.append(related_words_list[random_int])
+                        
+                    #when selected words are generated, populate the string result  with random values inside the string including the selected words
+                    #* for this implementation it is assumed that a related word is the first substring in the string
                     #randomly select a related word from the list of words previosly selected 
                     random_char = related_word_selection[0,randint(len(related_word_selection))]  
-                    #remove selected word from list
-                    related_word_selection.remove(random_char)  
-                # after selecting a random character add it to output string
-                string_result+= random_char
-                if len(string_result) > minimum_size and len(related_word_selection) ==0:
-                    break
-                if len(string_result) >= maxiumum_size:
-                    break     
-                
-            return string_result
-        # -- The above works on the premise of ASCII characters being used
-        except Exception:
-            print('Exception raised during generation phase of generate_string')
-            return 
+                #remove selected word from list
+                related_word_selection.remove(random_char) 
+                string_result+= random_char 
+                    
+                #while the string result is under the minimum size and there are words that need to be used
+                while True:
+                    #randomly select a value that designates the type of character to use
+                    random_value = randint(0,10)
+                    if random_value >= 3:
+                        #if random value is 0 select a random special character
+                        random_char = special_characters_ascii[randint(0, len(special_characters_ascii))]
+                    #if random value is is from 3 to 6
+                    elif 3 > random_value <= 6:
+                        random_char = numbers[randint(0,len(numbers))] 
+                    else:
+                        #randomly select a related word from the list of words previosly selected 
+                        random_char = related_word_selection[0,randint(len(related_word_selection))]  
+                        #remove selected word from list
+                        related_word_selection.remove(random_char)  
+                    # after selecting a random character add it to output string
+                    string_result+= random_char
+                    if len(string_result) > minimum_size and len(related_word_selection) ==0:
+                        break
+                    if len(string_result) >= maxiumum_size:
+                        break     
+                    
+                return string_result
+            # -- The above works on the premise of ASCII characters being used
+            except Exception:
+                print('Exception raised during generation phase of generate_string')
+                return 
     def list_core_words(self):
-        """Returns a list"""
+        """Returns a list, base form is csv"""
         if self.dictionaryCore != '':
             csv_as_list = re.split(SEPERATOR_VALUE['csv'], self.dictionaryCore)
             return list(filter(None, csv_as_list))
@@ -448,3 +493,90 @@ class PasswordGeneration(models.Model):
         self.dictionaryRelated = '' 
         self.save()
         return
+    def __generate_usable_ascii(self):
+        #create a list of numbers to use
+        numbers = []
+        for i in range(self.minimum_numbers):
+            numbers.append(randint(0,9))
+        # create a list of special characters to use 
+        special_characters_ascii = []
+        for i in range(self.minimum_special_characters):
+            special_characters_ascii.append(chr(randint(58,64))) 
+        return {"numbers": numbers, "spc": special_characters_ascii}
+    def __display_corewords(self):
+        print(f"current core words: {self.list_core_words()} \n current related words: {self.list_related_words()}")
+    def __related_add_antonyms(self, jsonresponse):
+        # check if json response has sub key "ants" in "meta"
+        if "ants" not in jsonresponse[0]["meta"].keys():
+            return
+        # create reference to location
+        response_syns = jsonresponse[0]["meta"]["ants"]
+        # get reference to current related dicitonary
+        related_dict = self.list_related_words()
+
+        #print(jsonresponse[0]["meta"].keys())
+
+        # check if antonyms have values: assumed single list if not do nothing
+        if len(jsonresponse[0]["meta"]["ants"]) == 0:
+            return
+        # check if the first index in the above is a list if so make subject the list 
+        try:
+            if type(response_syns[0]) == list:
+                response_syns = response_syns[0]
+            
+        except print(0):
+            pass
+        
+        # determine if response has values
+        if len(response_syns) == 0:
+            return
+        # if value is less than 3 but more than 0 
+        if len(response_syns) >= 3:
+            #check if words can be added to dictionary related, is not present in core words, and if so add them
+       
+            for i in range(3):
+                random_index = randint(0, len(response_syns)-1)
+                if response_syns[random_index] not in related_dict and response_syns[random_index] not in self.list_core_words() :
+                    related_dict.append(response_syns[random_index])
+            #return related list as csv 
+            self.dictionaryRelated = self.convert_to_csv(related_dict)
+            print(self.dictionaryRelated)
+        return 
+    def __related_add_synonyms(self, jsonresponse):
+        # check if json response has sub key "ants" in "meta"
+        if "syns" not in jsonresponse[0]["meta"].keys():
+            return
+        # create reference to location
+        response_syns = jsonresponse[0]["meta"]["syns"]
+        # get reference to current related dicitonary
+        related_dict = self.list_related_words()
+
+        #print(jsonresponse[0]["meta"].keys())
+
+        # check if antonyms have values: assumed single list if not do nothing
+        if len(jsonresponse[0]["meta"]["syns"]) == 0:
+            return
+        # check if the first index in the above is a list if so make subject the list 
+        try:
+            if type(response_syns[0]) == list:
+                response_syns = response_syns[0]
+            
+        except print(0):
+            pass
+        
+        # determine if response has values
+        if len(response_syns) == 0:
+            return
+        # if value is less than 3 but more than 0 
+        if len(response_syns) >= 3:
+            #check if words can be added to dictionary related, and if so add them
+       
+            for i in range(3):
+                random_index = randint(0, len(response_syns)-1)
+                if response_syns[random_index] not in related_dict and response_syns[random_index] not in self.list_core_words():
+                    related_dict.append(response_syns[random_index])
+            #return related list as csv 
+            self.dictionaryRelated = self.convert_to_csv(related_dict)
+            print(self.dictionaryRelated)
+        return 
+  
