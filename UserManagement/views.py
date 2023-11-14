@@ -78,13 +78,13 @@ class SignupView(CreateView):
         self.model_instance.save()
         
         #Generate Users Activation Token
-        while True: 
-            token = account_activation_token.make_token(self.model_instance)
+        
+        token = account_activation_token.make_token(self.model_instance)
+        while Token.objects.filter(tokenValue = token).exists():
              # determine if record is unique, if not create a new token for user
-            if Token.objects.filter(tokenValue = token).exists():
-                token = account_activation_token.make_token(self.model_instance)
-                continue
-            break
+            token = account_activation_token.make_token(self.model_instance)
+            continue
+
             
         # store activation token in useable state
         token_record = Token.objects.create(tokenValue = token, owner = self.model_instance)
@@ -170,7 +170,6 @@ class SignupView(CreateView):
         #set user key as confirmed unique new key - Hash for security
         self.model_instance.key = make_password(masterkey) 
         
-        print(f'testing: Master Key calculation: {masterkey}')
         # return source key for usage
         return masterkey              
 class SigninView(LoginView):

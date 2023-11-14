@@ -8,7 +8,7 @@ from .forms import FriendRequestForm_CheckUsername
 from django.contrib.auth import get_user_model
 # Todo - find approach to decoucple direct model imports
 from UserManagement.models import SolutionUserProfile
-
+from CredentialVault.models import CredentialRecord
 # JSON Functionality
 from django.http import JsonResponse
 import json
@@ -101,8 +101,25 @@ class ViewFriendRequests(ListView, LoginRequiredMixin):
         
         return context
 
-
-
+# View Friend Credential Records List View - Display only record owner - username, and password
+class ViewFriendSharedCredentials(ListView, LoginRequiredMixin):
+    template_name = 'FriendFunctionality/shared_credentials.html'
+    context_object_name = 'credential_records'
+    model = FriendRequest
+    
+    def get_context_data(self, **kwargs: Any):
+        context = super().get_context_data(**kwargs)
+        # get user profile
+        user_profile = SolutionUserProfile.objects.get(user= self.request.user)
+        # get user friend list
+        friendList = FriendList.objects.get(owner_profile=user_profile)
+        
+        # get all credential records marked as shared owned by friends
+        all_friends_shared_list = []
+        for friend_profile in friendList.friends_list.all():
+            all_friends_shared_list.append(CredentialRecord.objects.get(owner = friend_profile.user, service_type = 'Public'))
+        context['friend_credentials'] = all_friends_shared_list  
+        return context
 #@csrf_exempt
 def ProcessFriendJSONRequest(request, *args, **kwargs):
     """View The Request for friendship and allow user to accept or decline the request"""

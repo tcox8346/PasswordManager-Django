@@ -72,5 +72,5 @@ class FernetEncryption:
         # return clear text
         return clear_text
         
-def generate_128b_key(self):
+def generate_128b_key():
     return Fernet.generate_key()

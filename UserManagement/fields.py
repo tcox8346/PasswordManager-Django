@@ -12,7 +12,11 @@ class EncryptedField_Char(models.CharField):
     
     def __init__(self,key = None ,*args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key = key
+        if key == None:
+            self.key = os.environ["Fernet"]
+        else:
+            self.key = key
+        
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
 
@@ -47,7 +51,11 @@ class EncryptedField_EmailField(models.EmailField):
     
     def __init__(self,key = None ,*args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key = key
+        if key == None:
+            self.key = os.environ["Fernet"]
+        else:
+            self.key = key
+        
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
 

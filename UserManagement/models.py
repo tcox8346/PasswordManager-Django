@@ -9,14 +9,12 @@ from django.core.mail import send_mail
 from .tokens import TokenGenerator
 # REquired functions
 import secrets, datetime
-from django.urls import reverse
-from django.db.models import Q
 from autoslug import AutoSlugField
-
+from .fields import EncryptedField_Char, EncryptedField_EmailField
 # Signals
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-
+from .SupportingImports.MasterKey_AES import generate_128b_key
 
 
 # custom fields - Profile
@@ -85,7 +83,7 @@ class SolutionUser(AbstractUser, PermissionsMixin): # Server Based Encryption
         try:
             
             # generate a new key combo that is unique
-            secret_key = self.generate_free_key(KEY_SIZE)
+            secret_key = self.generate_free_key()
 
             counter = 0 
             while SolutionUser.objects.filter(key=secret_key).exists() and counter < 5:
@@ -101,7 +99,8 @@ class SolutionUser(AbstractUser, PermissionsMixin): # Server Based Encryption
             print (message)
             return None
     def create_masterkey(self):
-        return self._create_key(KEY_SIZE)  
+        # key generation goes here
+        return generate_128b_key()
     def generate_free_key(self, key_size = KEY_SIZE):
         # generate a new key combo that is unique
         return secrets.token_hex(key_size)

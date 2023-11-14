@@ -315,6 +315,7 @@ class PasswordGeneration(models.Model):
                     final_result += char
             # remove all blank spaces from word
             final_result = final_result.replace(" ","")
+            print(f"final result preproccessing {final_result}")
             # post processing check - confirm password requirements are met
             
             # atleast 1 special character 

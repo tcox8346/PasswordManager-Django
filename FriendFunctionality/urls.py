@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ViewFriendListHome, CreateFriendRequestView,ViewFriendRequests, ProcessFriendRequestClassView, AJAXConnectionTestingView, processFriendRemoval
+from .views import ViewFriendListHome, CreateFriendRequestView,ViewFriendRequests, ProcessFriendRequestClassView, processFriendRemoval, ViewFriendSharedCredentials
 
 # Patterns are prepinned with user:str/friends/
 urlpatterns = [
@@ -9,6 +9,7 @@ urlpatterns = [
     path('<slug:slug>/active_requests/', ViewFriendRequests.as_view(), name ='all_active_request'),
     path('process_request/', ProcessFriendRequestClassView.as_view(), name ='process_request'),
     path('remove_friend/', processFriendRemoval, name ='process_request_friend_removal'),
+    path('friendrecords/', ViewFriendSharedCredentials.as_view(), name = "shared_friend_records")
     # Alternative path to above
     #path('testing', AJAXConnectionTestingView.as_view(), name ='ajax_test'),
     #path('a', ClassView.as_view(), name ='name'),

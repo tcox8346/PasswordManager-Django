@@ -25,6 +25,11 @@ FERNET = b'wYZlyHsW-Qyq_h_2nw8Vjv6Quhoe1sBECrgDfS6xI2E='.decode()
 os.environ["SECRET"] = SECRET_KEY
 os.environ["Fernet"] = FERNET
 
+# change when impementing enviorment key
+#from dotenv import load_dotenv, find_dotenv
+#load_dotenv(find_dotenv())
+#SECRET_KEY = os.environ['SECRET_KEY']
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
