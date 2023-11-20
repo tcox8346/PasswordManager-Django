@@ -56,3 +56,8 @@ General
 AJAX 
     Set up javscript/jqeury script to enable single page updating of user credential list without reloading a webpage.
         Functions are to be defined in one standalone script and imported to html pages that require them
+
+Core
+    Enhance Security of Credential Sharing
+
+    

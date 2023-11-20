@@ -271,7 +271,6 @@ class PasswordGeneration(models.Model):
                         break
                words.append(related_words[choice]) 
             
-            print(f"selected words : {words}")
             # alter each word in the sublist in some form
             results = []
             for word in words:
@@ -315,7 +314,6 @@ class PasswordGeneration(models.Model):
                     final_result += char
             # remove all blank spaces from word
             final_result = final_result.replace(" ","")
-            print(f"final result preproccessing {final_result}")
             # post processing check - confirm password requirements are met
             
             # atleast 1 special character 
@@ -330,7 +328,7 @@ class PasswordGeneration(models.Model):
                     num_count += 1
             
             # if less then the required amount, insert the required amount randomly inside the result
-            if spc_count < 3:
+            if spc_count < self.minimum_special_characters:
                 post_processed_result = ""
                 current_index = 0
                 final_result_index = 0
@@ -357,8 +355,7 @@ class PasswordGeneration(models.Model):
                 final_result = post_processed_result    
             #repeat process defined above for numerals 
                                 # if less then the required amount, insert the required amount randomly inside the result
-            if num_count < 3:
-                print(f"num count is {num_count}")
+            if num_count < self.minimum_numbers:
                 post_processed_result = ""
                 current_index = 0
                 final_result_index = 0
@@ -384,6 +381,7 @@ class PasswordGeneration(models.Model):
                     current_index += 1
                 final_result = post_processed_result    
 
+        
             return final_result
         #####################
                 

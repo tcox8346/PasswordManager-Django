@@ -10,8 +10,10 @@
 
         <ul class="list-group">
             {% for friend in friend_record.friends_list.all %}
-               <span> <li class="list-group-item" id = "friend.user.username">{{friend.user.username}}
-                 <a name="" class="btn btn-primary remove_friend_btn" href="#" role="button" data-view = {% url "process_request_friend_removal" user.username %}></a> 
+               <span> 
+                <li class="list-group-item" id = "{{friend.user.username}}">
+                    <i class="fas fa-h3 w-25 p-3    ">{{friend.user.username}}</i>
+                    <a name="" class="btn btn-primary w-25 p-3 remove_friend_btn" href="#" role="button" data-view = {% url "remove_friend" user.username %}> Remove Friend</a> 
                </li> </span>
             {% endfor %}
             </ul>
@@ -71,7 +73,7 @@
         // On Document Ready Populate 
         $(document).ready(function(){
             // For each element meant to act as a remove freind button 
-            $(".remove_friend").each(function(){
+            $(".remove_friend_btn").each(function(){
                 //add functionality
 
                 $(this).click(function(){
@@ -79,8 +81,8 @@
                     let instance_id = $(this).parent().attr('id')
                     console.log(`Button clicked: ${instance_id}`);
                     var view_url = $(this).attr('data-view')
-                    console.log(`Accept button clicked URL: ${view_url}`);
-                    user_to_remove = $(this).attr('data-view');
+                    console.log(`remove friend button clicked URL: ${view_url}`);
+
                     //accept_request_friend(view_url, csrf_instance);
                     $.ajax({
                         url: view_url, 

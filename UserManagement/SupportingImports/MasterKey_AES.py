@@ -2,6 +2,7 @@
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from cryptography.fernet import Fernet
+import binascii
 import os
 
 
@@ -49,11 +50,11 @@ class FernetEncryption:
         # setup encrpytion cipher
         cipher = FernetEncryption(key)
         
-        #encrpy result into url safe base 64 utf-8 fernet cipher text
+        #encrpyt result into url safe base 64 utf-8 fernet cipher text
         basic_result = cipher.encrypt(data)
         
         # convert to hex format for manipulation
-        hexed_result = basic_result.hex()
+        hexed_result =  binascii.hexlify(basic_result)
         # return hexed form
         return hexed_result
         
@@ -66,7 +67,8 @@ class FernetEncryption:
           
         cipher = Fernet(self.key)
         # convert hex data back into non hex url encoded base 64 form
-        data = bytes.fromhex(data)
+        print(f"the data is {type(data)}")
+        data = binascii.unhexlify(data)
         # decrypt original token form
         clear_text = cipher.decrypt(data).decode()
         # return clear text

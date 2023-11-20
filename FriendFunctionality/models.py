@@ -47,6 +47,7 @@ class FriendList(models.Model):
     def remove_friend(self, user_profile):
         if self.b_is_friend(user_profile):  
             self.friends_list.remove(user_profile)
+        # cREATE a remove friend notification 
         return
     
     # Helper functions

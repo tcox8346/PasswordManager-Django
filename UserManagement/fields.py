@@ -37,7 +37,7 @@ class EncryptedField_Char(models.CharField):
         if value is None:
             return value
         # convert string byte form into byte hex form
-        value = value.hex()
+        value = value
         # decrypt cipher text
         result = FernetEncryption(self.key).decrypt(data = value,)
         
@@ -76,7 +76,6 @@ class EncryptedField_EmailField(models.EmailField):
         if value is None:
             return value
         
-        value = value.hex()
         # decrypt cipher text
         result = FernetEncryption(self.key).decrypt(data = value,)
         # return decoded clear text

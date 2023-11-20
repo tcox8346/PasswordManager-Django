@@ -1,1 +1,7 @@
 This app is meant to enable to creation and management of Credentials. 
+
+
+Notifications:
+ This model has a notification sub system that creates notification records to draw user attention to events 
+
+ This system is used to inform a user has been provided access to a record, declined, removed, etc

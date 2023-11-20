@@ -1,7 +1,0 @@
-install --upgrade setuptoolscl
-install --upgrade gcloud
-install pyrebase
-
-Neccessary for pycrptodome to install
-
-pycrpytodome is a library label, must import a embeded class to use. i,e Crypto instead of pycrptodome

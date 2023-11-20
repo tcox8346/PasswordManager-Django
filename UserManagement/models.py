@@ -10,7 +10,7 @@ from .tokens import TokenGenerator
 # REquired functions
 import secrets, datetime
 from autoslug import AutoSlugField
-from .fields import EncryptedField_Char, EncryptedField_EmailField
+
 # Signals
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -206,10 +206,12 @@ class SolutionUserProfile(models.Model): # Server - User Based Encrpytion
     user = models.OneToOneField(get_user_model(), related_name='profile_owner', on_delete=models.CASCADE)
     image = models.ImageField(blank=True,upload_to=None, height_field=20, width_field=20, max_length=None)
     
+    # Encryption Based Sharing
     # $ Encrypted using Server key
     shared_key = models.CharField(max_length=KEY_SIZE) # A Encryption key used to encrypt and decrypt Credential Records marked as shared by the user, 256 byte key    
     # $ Encrypted using user key
     shared_keys = models.TextField(blank=True,default="" ) # A Dictionary in csv form . example : "username=value, username=value,..."         #@ Encrypt
+    # Encryption Based Sharing
     
     slug = models.SlugField(default='', unique=True)
 
@@ -260,7 +262,6 @@ class SolutionUserProfile(models.Model): # Server - User Based Encrpytion
 def create_profile(sender, instance=None, created=False, **kwargs):
     if created:
         SolutionUserProfile.objects.create(user=instance)
-        print(f"user{instance.username} profile created")
         
 """
 Encrpytion Based Functionality
