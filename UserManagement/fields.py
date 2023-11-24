@@ -3,7 +3,10 @@ from django.db import models
 # Encrpytion Methods
 from .SupportingImports.MasterKey_AES import AES_custom, FernetEncryption
 import os
-
+from encrypted_fields import fields
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.exceptions import FieldError, ImproperlyConfigured
 KEY_SIZE = 128
 
 #@ Fernet
@@ -166,3 +169,41 @@ class EncryptedChar(models.CharField):
         return  AES_custom(source_key=self.key).decrypt_file(value, self.tag)
     
     # Update save method to save tag after encrpytion so value can be decrypted and authenticated later
+
+
+# Custom Encrypted Field Using Django Searchable Encrypted Fields
+class PrivateEncryptedCharField(fields.EncryptedCharField):
+    
+    def __init__(self, *args, **kwargs):
+        if type(kwargs.get("encryption_key")):
+            self.user_key = kwargs.get("encryption_key")
+        super().__init__(*args, **kwargs)
+        
+    def keys(self):
+        # should be a list or tuple of hex encoded 32byte keys
+        if self.user_key:
+             key_list = [self.user_key]
+        else:
+            key_list = settings.FIELD_ENCRYPTION_KEYS
+       
+        if not isinstance(key_list, (list, tuple)):
+            raise ImproperlyConfigured("FIELD_ENCRYPTION_KEYS should be a list.")
+        return key_list
+    
+class PrivateEncryptedEmailField(fields.EncryptedEmailField):
+    
+    def __init__(self, *args, **kwargs):
+        if type(kwargs.get("encryption_key")):
+            self.user_key = kwargs.get("encryption_key")
+        super().__init__(*args, **kwargs)
+        
+    def keys(self):
+        # should be a list or tuple of hex encoded 32byte keys
+        if self.user_key:
+             key_list = [self.user_key]
+        else:
+            key_list = settings.FIELD_ENCRYPTION_KEYS
+       
+        if not isinstance(key_list, (list, tuple)):
+            raise ImproperlyConfigured("FIELD_ENCRYPTION_KEYS should be a list.")
+        return key_list

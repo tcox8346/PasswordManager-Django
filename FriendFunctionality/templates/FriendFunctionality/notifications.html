@@ -8,6 +8,9 @@
           {% csrf_token %}
         {% endblock security %}
 
+
+    <i class="fas fa-h3    ">  Unread Notifications: {{unread_notifications}}</i>
+    <br>
     <i class="fas fa-h3    ">  Credential Access Requests</i>
     <!--Display Each Records Details  -->
         {% for record in access_requests %}
@@ -23,6 +26,7 @@
             </div>        
         
         {% endfor %}
+        <br>
         <br>
     {% endblock requests_notifications %}
 

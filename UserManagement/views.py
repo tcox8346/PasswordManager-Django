@@ -89,6 +89,7 @@ class SignupView(CreateView):
         # store activation token in useable state
         token_record = Token.objects.create(tokenValue = token, owner = self.model_instance)
         token_record.save()
+
         
        
         #Email Activation 
@@ -103,17 +104,13 @@ class SignupView(CreateView):
             'token': token,
             'password': new_passwordandkey,
         })    
-        email_from = settings.EMAIL_HOST_USER
         recipient_list = [self.model_instance.email]
         
 
         #email user 
-        self.model_instance.email_user(subject=subject, message=message,from_email=email_from, recipient_list=recipient_list) 
+        self.model_instance.email_user(subject=subject, message=message, recipient_list=recipient_list) 
 
         
-        #automatic sign in functionality - This will be replaced when email verification is implemented
-        #new_user = authenticate(username= form.cleaned_data['username'], password=new_password)
-        #login(self.request, new_user)
         return super().form_valid(form) 
     def activate(request, uidb64, token):
         #Email Validation - Account Validation 
@@ -168,7 +165,7 @@ class SignupView(CreateView):
         #set user password as confirmed unique new password
         self.model_instance.password = make_password(masterkey)
         #set user key as confirmed unique new key - Hash for security
-        self.model_instance.key = make_password(masterkey) 
+        self.model_instance.key = masterkey 
         
         # return source key for usage
         return masterkey              
@@ -189,8 +186,10 @@ class ActivateAccountView(View):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = SolutionUser.objects.get(pk=uid)
+            print(f'user is {user.username}')
         except (TypeError, ValueError, OverflowError, SolutionUser.DoesNotExist):
             user = None
+
         user_token_record = Token.objects.get(owner = user)
         if user is not None and account_activation_token.check_token(user, token) and user_token_record.activeState == user_token_record.ActiveStates['useable']:
             user.is_active = True
@@ -232,4 +231,6 @@ class InvalidTokenView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["error_string"] = 'This is an invalid request, your token has already been used. If this is an error please send a account reset request, or login if you know your password or master password'
+
         return context
+# function view that generates a new activation token    

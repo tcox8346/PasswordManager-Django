@@ -21,18 +21,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-469=ewrtbr4oaxg3-il^ueozd5&o3k3-608p9gw=7=k$7=-79q'
+
+# Cryptographic variables - custom fernet implementation
 FERNET = b'wYZlyHsW-Qyq_h_2nw8Vjv6Quhoe1sBECrgDfS6xI2E='.decode()
 os.environ["SECRET"] = SECRET_KEY
 os.environ["Fernet"] = FERNET
 
-# change when impementing enviorment key
+# change when implementing enviorment key
 #from dotenv import load_dotenv, find_dotenv
 #load_dotenv(find_dotenv())
 #SECRET_KEY = os.environ['SECRET_KEY']
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production! -Disable on production
 DEBUG = True
-
 ALLOWED_HOSTS = []
 
 
@@ -50,10 +51,13 @@ INSTALLED_APPS = [
     'MessageBoard',
     'CredentialVault',
     'PasswordGenerator',
-    
     'FriendFunctionality',
     # Community Apps
         #SSO functionality
+    #email apps
+    'sendgrid',
+    #Cryptography
+    "encrypted_fields",
 
 ]
 
@@ -96,6 +100,14 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        
+        # mysql - live enviorment
+        # "ENGINE": "django.db.backends.mysql",
+        #'NAME': 'TestServer',
+        #'USER': 'Django-CredentialService',
+        #'PASSWORD': 'jacksForLfE135@1',
+        #'HOST':'localhost',
+        #'PORT':'3306',
     }
 }
 
@@ -144,7 +156,7 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'UserManagement.SolutionUser'
-LOGIN_REDIRECT_URL = 'forumhome'
+LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
 
@@ -153,18 +165,26 @@ USER_PROFILE_MODEL = "UserManagement.SolutionUserProfile"
 # Friend Functionality
 USER_FRIEND_SYSTEM = "FriendFunctionality.FriendList"
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 #Email verification Code
     #---------Active in production ------------#
-##EMAIL_USE_TLS = True  
-##DEFAULT_FROM_EMAIL = ''
-##EMAIL_HOST = 'smtp.gmail.com'  
-##EMAIL_HOST_USER = 'testappication@gmail.com'  
-##EMAIL_HOST_PASSWORD = 'PassmeBack422!'  
-##EMAIL_PORT = 587  
+    #store api key as env variable
+SENDGRID_API_KEY = 	'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' #os.getenv('SENDGRID_API_KEY') 
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+DEFAULT_FROM_EMAIL = 'jacobhenty2@gmail.com'
 
-# Cryptography modules
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
+# Cryptography module - Django Searchable Encrypted Fields
+# generated using secrets.token_hex(32)
+FIELD_ENCRYPTION_KEYS = [
+    '65e7e5e65f96890ba3124e76336391c3edf91cf9409ade2b39b30b0d96678816'
+]
 
 # Project Security
 ## HTTPS -Strict Secure Mode 

@@ -1,29 +1,47 @@
+from collections.abc import Iterable
 from typing import Any
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from encrypted_fields import fields
+from UserManagement.fields import PrivateEncryptedCharField, PrivateEncryptedEmailField
+import secrets
+# Filler search field key
+def get_user_key():
+    return '65e7e5e65f96890ba3124e76336391c3edf91cf9409ade2b39b30b0d96678816'
+    #return  secrets.token_hex(32)
 
 class CredentialRecord(models.Model):
+    #@ Each field is encrypted using the owners key
     # Usermanagement record that specifies the user who owns the record
     owner = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='credentials', to_field='username') 
        # Service feild: This fields holds what service is tied to the credential record, i.e the service provider of the credential
-    service_provider = models.CharField(blank=True,default='Undefined', max_length=50)
-    username = models.CharField(blank=False, max_length=50) #@ Encrypt
-    password =  models.CharField(blank=False, max_length=50, default=None, null=True)  #@ Encrypt - Derive a model class that uses a key provided by user to encrpyt and decrypt
-    email = models.EmailField(blank=True, null=True, default=None) #@ Encrypt # An optional field that denotes the email address associated with the record
-    Share_state = (('Public','shared'), ('Private','unshared')) # Specifier that designates if a record is shared to friend profiles
+    _service_provider = fields.EncryptedCharField(blank=True, unique=False, default="Undefined", max_length=50) #@ Encrypt # An optional field that denotes the email address associated with the record
+    service_provider = fields.SearchField(get_user_key, encrypted_field_name="_service_provider") 
     
-    # Service choices stores a value that denotes the class of record. For example
-        # if the record is for business purposes, personel, or undefined.
-    ## The Service type is a a way of grouping service records by purpose, it uses the choices of the above type.
+    _username = fields.EncryptedCharField(null = False, blank=True, unique=False, default="", max_length=100) #@ Encrypt # An optional field that denotes the email address associated with the record
+    username = fields.SearchField(get_user_key, encrypted_field_name="_username")
+    
+    _password = fields.EncryptedCharField(null = False, blank=False, unique=False, default="", max_length=100) #@ Encrypt # An optional field that denotes the email address associated with the record
+    password = fields.SearchField(get_user_key, encrypted_field_name="_password")
+    
+    _email = fields.EncryptedEmailField(null = False, blank=True, unique=False, default="") #@ Encrypt # An optional field that denotes the email address associated with the record
+    email = fields.SearchField(get_user_key, encrypted_field_name="_email")
+    
+    Share_state = (('Public','shared'), ('Private','private')) # Specifier that designates if a record is shared to friend profiles
+    
+    # Service choices stores a value that denotes the class of record.
     service_type = models.CharField(choices=Share_state, default= Share_state[0] ,blank=True, max_length=50)
     #Shares field: This field holds a collection of string values that designate the usernames that can access a credentials fields. This will be in csv form
         #TODO: implement model methods that return csv as list
     
     added_date = models.DateTimeField(auto_now=True, auto_now_add=False)
-    access_granted_to = models.TextField(default='') # Holds list of usernames who have one time access to a resource - the name is removed when access is provided
+    
+    _access_granted_to = fields.EncryptedTextField(null = True, blank=True, unique=False, default="", max_length=200) # Holds list of usernames who have one time access to a resource - the name is removed when access is provided
+    access_granted_to = fields.SearchField(get_user_key, encrypted_field_name="_access_granted_to")
+    
     requesting_access = models.TextField(default='')
     class Meta:
        constraints = [models.UniqueConstraint(fields=['service_provider', 'username', 'owner'], name="unique_service_username_owner")]
@@ -135,9 +153,11 @@ class CredentialRecord(models.Model):
         print("flushing access ")
         self.access_granted_to = ''
         self.save()
+    
+    
     # Credentials are records of information that detail a the information associated with a service account. 
         # Credential impertantent information is to be stored in encrypted forms and decrypted by a key provided to a user upon the initial creation of master account.
-        
+    
 # Notification Functionality 
 class Notification(models.Model):
     """This is a notifcation in relation to the credential sharing system - this handles informing users of request to access a credential, and notifications to users about changing credentials"""
@@ -195,6 +215,19 @@ def create_credentialstored_notification(sender, instance=None, created=False, *
     else:
         Notification.objects.create(purpose = 7, description = f"A credential record has been modified on your account: {instance.service_provider} : {instance.username}", associated_user = instance.owner, related_credentail = instance)
 
+@receiver(post_save, sender=CredentialRecord)
+def update_encryptionkey(sender, instance=None, created=False, **kwargs):
+    """Custom  method which purpose is to use the owners key attribute as parameter for encryption/decryption when object is first saved"""
+    if created == True:
+        """print(f'user owner value is  {instance.owner.username}')
+        encryption_key = instance.owner.get_key
+        print(f'user key value is  {encryption_key}')
+        instance._service_provider = PrivateEncryptedCharField(encryption_key = encryption_key, null = False, blank=True, unique=False, default="", max_length=100)
+        instance._username = PrivateEncryptedCharField(encryption_key = encryption_key, null = False, blank=True, unique=False, default="", max_length=100)
+        instance._password = PrivateEncryptedCharField(encryption_key = encryption_key, null = False, blank=True, unique=False, default="", max_length=100)
+        instance._email = PrivateEncryptedEmailField(encryption_key = encryption_key, null = False, blank=True, unique=False, default="", max_length=100)
+        instance._access_granted_to = PrivateEncryptedCharField(encryption_key = encryption_key, null = False, blank=True, unique=False, default="", max_length=100)
+        """
 # Notification Creation Methods
 def create_credentialaccessrequest_notificaiton(associated_user, requesting_user:str, related_credentail:CredentialRecord):
     new_notification = Notification.objects.create(purpose = 0, 

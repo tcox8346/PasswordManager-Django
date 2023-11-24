@@ -22,7 +22,6 @@ class ViewFriendListHome(DetailView, LoginRequiredMixin):
     
             
     def get_queryset(self):
-        
         return super().get_queryset()
     
 class CreateFriendRequestView(LoginRequiredMixin, FormView):
@@ -232,13 +231,22 @@ class NotificationListView(ListView, LoginRequiredMixin):
         all_access_requests_notifications = []
         # get all active notification records owned by user
         all_active_notifications = Notification.objects.filter(associated_user = self.request.user, active = True).all()
+        # mark the first x - amount that can be read at a time - as read
+        
+            
         for notification in all_active_notifications:
             # if the notification is about credential access requests store in context variable storing all credential requests
             if notification.purpose == 0:
                 all_access_requests_notifications.append(notification)
+                notification.read = True
+                notification.save()
     
         context['access_requests'] = reversed(all_access_requests_notifications)
         context['all_notifications'] =  reversed(all_active_notifications)
+        
+        # Track all unread notifications
+        unread_notifications = Notification.objects.filter(associated_user=self.request.user, read=False).count()
+        context["unread_notifications"] = unread_notifications
 
         return context
 
@@ -311,7 +319,6 @@ def remove_friend_json(request, *args, **kwargs):
         
     return JsonResponse({'successful_execution': is_success},status=200)
   
-
 # Testing Views
 class AJAXConnectionTestingView(View):
     def __init__(self, *args,**kwargs: Any):

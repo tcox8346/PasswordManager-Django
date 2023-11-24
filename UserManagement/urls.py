@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SignupView, ActivateAccountView, ProfileDetailView, DeleteView, SettingsView, CredentialPasswordChangeView, InvalidTokenView
+from .views import SignupView, ActivateAccountView, ProfileDetailView, DeleteView, SettingsView, CredentialPasswordChangeView, InvalidTokenView, CredentialPasswordResetView
 
 
     #All profile paths = accounts/...
@@ -12,7 +12,8 @@ urlpatterns = [
     path('profile/', ProfileDetailView.as_view(), name='user_profile'),
     path('settings/', SettingsView.as_view(), name='user_settings'),
     path('error/', InvalidTokenView.as_view(), name='invalid_view'),
-
+    # Account modification views
+    path('reset-password/', CredentialPasswordResetView.as_view(), name='password_reset_view'),
     #Profile Based View(s)
     path('profile/<slug:slug>',ProfileDetailView.as_view(), name = 'profile_view' ),
 
