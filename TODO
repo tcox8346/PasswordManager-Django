@@ -51,9 +51,13 @@ General
     Setup Links To User Profile On Top Right Of Ribbon
 
     Setup Webpages that redirect to previous page upon success
-
     Setup Weblinks that do task without navigating away from page. I.e add user without leaving current page.
 
 AJAX 
     Set up javscript/jqeury script to enable single page updating of user credential list without reloading a webpage.
         Functions are to be defined in one standalone script and imported to html pages that require them
+
+Core
+    Enhance Security of Credential Sharing
+
+    

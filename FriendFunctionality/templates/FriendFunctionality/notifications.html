@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %} {{user.username}} Notifications  {% endblock title %}
+{% block Body %}
+
+    {% block requests_notifications %}
+        {% block security %}
+          {% csrf_token %}
+        {% endblock security %}
+
+
+    <i class="fas fa-h3    ">  Unread Notifications: {{unread_notifications}}</i>
+    <br>
+    <i class="fas fa-h3    ">  Credential Access Requests</i>
+    <!--Display Each Records Details  -->
+        {% for record in access_requests %}
+        <!--if the requester is not the user -->
+            <!--Display Record Details if request is active for multiple records -->
+            <div id= '{{record.id}}' >
+                <ul class="list-group list-group-horizontal">
+                    <li class="list-group-item"><i class="fas fa-h2    ">Requester {{record.other_user}} </i></li>
+                    <li class="list-group-item"><i class="fas fa-h2    ">{{record.description}} </i></li>
+                    <li class="list-group-item"> <a name="" id="" class="btn btn-primary accept_btn_request"  href="#" data-view = '{% url "notification_handle_credential_access_request" user %}' role="button">Accept</a></li>
+                    <li class="list-group-item"> <a name="" id="" class="btn btn-primary decline_btn_request" href="#" data-view = '{% url "notification_handle_credential_access_request" user %}' role="button">Decline</a></li>
+                </ul>
+            </div>        
+        
+        {% endfor %}
+        <br>
+        <br>
+    {% endblock requests_notifications %}
+
+    {% block all_notifications %}
+        <i class="fas fa-h3    "> Top 10 Recent Active Notifications</i>
+        
+        <!--Display Up to 10 notifications  -->
+        {% for notification in all_notifications|slice:":10"%}
+            <!--Track instance identifier -->
+            <div id= '{{notification.id}}'>
+                <ul class="list-group list-group-horizontal">
+                    <li class="list-group-item"><i class="fas fa-h2    ">{{notification.description}} </i></li>
+                    <li class="list-group-item"><i class="fas fa-h2    ">{{notification.added_date}} </i></li>
+                </ul>
+            </div>   
+     
+        {% endfor %}       
+            <br>
+    {% endblock all_notifications %}
+
+
+
+    {% block scripts %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js" type="text/javascript"></script>
+        <script >
+        //Document Assignment
+            /// PROJECT NOTE - Currently CSRFTOKEN is exempt - fix before release(properly pass csrf token in header)
+            // Setup Code 
+                // JavaScript function to get cookie by name; retrieved from https://docs.djangoproject.com/en/3.1/ref/csrf/
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        // Does this cookie string begin with the name we want?
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+                // Reload document when any ajax call completes
+
+
+            // On Document Ready Populate 
+            $(document).ready(function(){
+                // For each element meant to act as a accept request button 
+                $(".accept_btn_request").each(function(){
+                    // add accept functionality
+
+                    $(this).click(function(){
+
+                        let instance_id = $(this).parent().parent().parent().attr('id')
+                        console.log(`Accept button clicked ID: ${instance_id}`);
+                        var view_url = $(this).attr('data-view')
+                        console.log(`Accept button clicked URL: ${view_url}`);
+                        //accept_request_friend(view_url, csrf_instance);
+                        $.ajax({
+                            url: view_url, 
+                            type: "POST",
+                            headers: 
+                                {
+                                "X-Requested-With": "XMLHttpRequest",
+                                'X-CSRFToken': csrftoken,
+                                mode: 'same-origin'
+                                },
+                            data: {  'purpose': 'accept_request', 'request_id': instance_id, 'user_instance': '{{user}}'},
+                            dataType: 'json',
+                            success: function () {
+                                console.log("done");
+                            }
+                        });
+                    });
+                });
+
+                // For each element meant to act as a decline request button 
+                $(".decline_btn_request").each(function(){
+                    // add accept functionality
+
+                    $(this).click(function(){
+
+                        let instance_id = $(this).parent().parent().attr('id')
+                        console.log(`decline button clicked ID: ${instance_id}`);
+                        var view_url = $(this).attr('data-view')
+                        console.log(`decline button clicked URL: ${view_url}`);
+                        //accept_request_friend(view_url, csrf_instance);
+                        $.ajax({
+                            url: view_url, 
+                            type: "POST",
+                            headers: 
+                                {
+                                "X-Requested-With": "XMLHttpRequest",
+                                'X-CSRFToken': csrftoken,
+                                mode: 'same-origin'
+                                },
+                            data: {  'purpose': 'decline_request', 'request_id': instance_id, 'user_instance': '{{user}}'},
+                            dataType: 'json',
+                            success: function () {
+                                console.log("done");
+                            }
+                        });
+                    });
+
+                });
+                
+                    
+            });
+
+            </script> 
+    {% endblock scripts %}
+{% endblock Body %}
+
+{% block Foot %}
+
+{% endblock Foot %}
+

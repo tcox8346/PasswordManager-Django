@@ -2,7 +2,8 @@
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from cryptography.fernet import Fernet
-
+import binascii
+import os
 
 
 class AES_custom:
@@ -31,33 +32,47 @@ class AES_custom:
     
         
 FERNET_KEY_SIZE = 128
-class FernetEncrpytion:
-    def __init__(self, key = None):
-        self.key = key
+class FernetEncryption:
+    """Encrpytion mechanism - default key is os.enviorment variable"""
+    def __init__(self, key):
+        #self.key = os.environ['FERNET']
+        if key == None:
+            key  = os.environ["Fernet"]
+        self.key =  key
         
     def encrypt(self, data = None, key = None):
-        if data == None:
-            return None
-        if key == None:
-            if self.key == None:
-                return
-            key = self.key
+        """Takes a string or bytes form object and converts it into a url safe base 64 utf encoded cipher text - converted into hex form for storage"""
+        if data == None or key == None:
+            return
+        # convert base form data into byte form
+        data = bytes(data, "utf-8")
         
-        cipher = Fernet(key)
-        cipher_text = cipher.encrypt(data)
-        return cipher_text
+        # setup encrpytion cipher
+        cipher = FernetEncryption(key)
+        
+        #encrpyt result into url safe base 64 utf-8 fernet cipher text
+        basic_result = cipher.encrypt(data)
+        
+        # convert to hex format for manipulation
+        hexed_result =  binascii.hexlify(basic_result)
+        # return hexed form
+        return hexed_result
+        
+        
             
-    def decrypt(self,data = None, key = None):
-        if data == None:
+    def decrypt(self,data = None):
+        """Decrypt fernet token in hex form """
+        if data == None or self.key == None:
             return None
-        if key == None:
-            if self.key == None:
-                return
-            key = self.key
-        
-        cipher = Fernet(key)
-        clear_text = cipher.decrypt(data)
+          
+        cipher = Fernet(self.key)
+        # convert hex data back into non hex url encoded base 64 form
+        print(f"the data is {type(data)}")
+        data = binascii.unhexlify(data)
+        # decrypt original token form
+        clear_text = cipher.decrypt(data).decode()
+        # return clear text
         return clear_text
         
-    def generate_128b_key(self):
-        return Fernet.generate_key()
+def generate_128b_key():
+    return Fernet.generate_key()

@@ -1,72 +1,138 @@
+from typing import Any
 from django.db import models
 # Encrpytion Methods
-from .SupportingImports.MasterKey_AES import AES_custom, FernetEncrpytion
-
+from .SupportingImports.MasterKey_AES import AES_custom, FernetEncryption
+import os
+from encrypted_fields import fields
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.exceptions import FieldError, ImproperlyConfigured
 KEY_SIZE = 128
 
-class EncryptedText_Private(models.TextField):
-    description = "Encrypted value - key must be 32 bytes in length, USE For Private key encryption only - This implementation uses fernet and uses 128 it keys "
-    def __init__(self, owning_class, user_class, user_class_instance,tag=None, *args, **kwargs):
-        kwargs['max_length'] = KEY_SIZE
-        kwargs['blank'] = True
-        kwargs['null'] = True
+#@ Fernet
+class EncryptedField_Char(models.CharField):
+    description = "Encrypted value - key must be 32 bytes in length, USE For symetric key encryption only - This implementation uses fernet and uses 128 it keys, Encrpyted using server key "
     
-        self.tag = tag
-        self.owner = user_class.objects.filter(user = user_class_instance)
-        self.key = self.owner.get_key()
-        self.owning_class = owning_class
-        
+    def __init__(self,key = None ,*args, **kwargs):
         super().__init__(*args, **kwargs)
+        if key == None:
+            self.key = os.environ["Fernet"]
+        else:
+            self.key = key
+        
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        del kwargs["max_length"]
-        del kwargs["blank"]
-        del kwargs["null"]
-        del self.key
-        del self.tag
+
         return name, path, args, kwargs
-    def get_prep_value(self, value):
+    def get_prep_value(self, value, instance=None):
         
         # convert value to byte form
         if type(value) != str:
             value = str(value).encode('utf-8')
-        # encrypt data with your own function
-        data = FernetEncrpytion(self.key).encrypt(value)
-        if self.owner == None:
-            print("No owner present, canceling operation")
-            return
+            
+        # Encrypt data 
+        data = FernetEncryption(self.key).encrypt(value)
+
+        # return string version of encrpyted data to caller
+        return str(data)
+    
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        # convert string byte form into byte hex form
+        value = value
+        # decrypt cipher text
+        result = FernetEncryption(self.key).decrypt(data = value,)
+        
+        # return decoded clear text
+        return result
+    def to_python(self, value):
+       
+        return value
+class EncryptedField_EmailField(models.EmailField):
+    description = "Encrypted value - key must be 32 bytes in length, USE For symetric key encryption only - This implementation uses fernet and uses 128 it keys, Encrpyted using server key "
+    
+    def __init__(self,key = None ,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if key == None:
+            self.key = os.environ["Fernet"]
+        else:
+            self.key = key
+        
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+
+        return name, path, args, kwargs
+    def get_prep_value(self, value, instance=None):
+        
+        # convert value to byte form
+        if type(value) != str:
+            value = str(value).encode('utf-8')
+            
+        # Encrypt data 
+        data = FernetEncryption(self.key).encrypt(value)
 
         # return encrpyted data to caller
         return data
     
     def from_db_value(self, value, expression, connection):
-        if value is None or self.tag is None or self.owner is None:
-            return value
-        # decrypt data with your own function
-
-        
-        # decrypt cipher text
-        result = FernetEncrpytion(self.key).decrypt(data = value,)
-        
-        # decode cipher text
-        decoded:bytearray = str(result)
-        decoded = decoded.decode("utf-8")
-        # return decoded clear text
-        return decoded
-    def to_python(self, value):
-        if isinstance(value, self.owning_class):
-            return value
-
         if value is None:
             return value
         
-        # decrypt data with your own function
-        result = FernetEncrpytion(self.key).decrypt(data = value)
-        # convert result into string form - expected to be byte array
-        decoded:bytearray = str(result)
-        # decode result into normalized form
-        decoded = decoded.decode("utf-8")
-        return decoded
+        # decrypt cipher text
+        result = FernetEncryption(self.key).decrypt(data = value,)
+        # return decoded clear text
+        return result
+    def to_python(self, value):
+       
+        return value   
+
+class EncryptedText_Private(models.TextField):
+    description = "Encrypted value - key must be 32 bytes in length, USE For symetric key encryption only - This implementation uses fernet and uses 128 it keys "
+    def __init__(self,key = None ,*args, **kwargs):
+        kwargs['max_length'] = 5000
+        kwargs['blank'] = True
+        kwargs['null'] = True
+        kwargs['unique'] = False
+        kwargs['default'] = ''
+        self.key = key
+        super().__init__(*args, **kwargs)
+        
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        del kwargs["max_length"]
+        del kwargs["blank"]
+        del kwargs["null"]
+        del kwargs['default']
+        
+
+        return name, path, args, kwargs
+    def get_prep_value(self, value, instance=None):
+            
+        # convert value to byte form
+        if type(value) != str:
+            value = str(value).encode('utf-8')
+            
+        # Encrypt data 
+        data = FernetEncryption(self.key).encrypt(value)
+
+        # return encrpyted data to caller
+        return data
+    
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        value = value.hex()
+        # decrypt cipher text
+        result = FernetEncryption(self.key).decrypt(data = value,)
+        # return decoded clear text
+        return result
+    def to_python(self, value):
+       
+        return value
+    
+   
+#@AES
 class EncryptedChar(models.CharField):
     description = "Encrypted value - key must be 32 bytes in length"
     def __init__(self, key,  instance_class, tag = '', *args, **kwargs):
@@ -103,3 +169,41 @@ class EncryptedChar(models.CharField):
         return  AES_custom(source_key=self.key).decrypt_file(value, self.tag)
     
     # Update save method to save tag after encrpytion so value can be decrypted and authenticated later
+
+
+# Custom Encrypted Field Using Django Searchable Encrypted Fields
+class PrivateEncryptedCharField(fields.EncryptedCharField):
+    
+    def __init__(self, *args, **kwargs):
+        if type(kwargs.get("encryption_key")):
+            self.user_key = kwargs.get("encryption_key")
+        super().__init__(*args, **kwargs)
+        
+    def keys(self):
+        # should be a list or tuple of hex encoded 32byte keys
+        if self.user_key:
+             key_list = [self.user_key]
+        else:
+            key_list = settings.FIELD_ENCRYPTION_KEYS
+       
+        if not isinstance(key_list, (list, tuple)):
+            raise ImproperlyConfigured("FIELD_ENCRYPTION_KEYS should be a list.")
+        return key_list
+    
+class PrivateEncryptedEmailField(fields.EncryptedEmailField):
+    
+    def __init__(self, *args, **kwargs):
+        if type(kwargs.get("encryption_key")):
+            self.user_key = kwargs.get("encryption_key")
+        super().__init__(*args, **kwargs)
+        
+    def keys(self):
+        # should be a list or tuple of hex encoded 32byte keys
+        if self.user_key:
+             key_list = [self.user_key]
+        else:
+            key_list = settings.FIELD_ENCRYPTION_KEYS
+       
+        if not isinstance(key_list, (list, tuple)):
+            raise ImproperlyConfigured("FIELD_ENCRYPTION_KEYS should be a list.")
+        return key_list

@@ -1,0 +1,11 @@
+Notification subfunctionality added 
+
+View(2) - urls(2) - Model(1) added 
+
+This apps main functionality is the implementation of a friend system. This system allows users to add other users as "friends". A friend is a user account in which you can request credential access.
+
+There also exists a subfunctionality notification system that enables the tracking of events that have occured on the system that has a relation to the user. 
+
+    When a user does anything that involves a CredentialVault.credential instance a notification is generated for the owning user. A user requests access for a shared credential and
+    the owner of the credential can accept or decline the request. If accepted the user has one time access to the credential record. On reload of the listing page, the credential is no longer 
+    visible.

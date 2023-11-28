@@ -17,7 +17,6 @@
 </head>
 <body class="container">
     {% block Nav %}
-
         <nav class="navbar navbar-expand-sm navbar-light bg-light ">
             <a class="navbar-brand" href="#">PasswordVault</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,8 +48,7 @@
                               <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                   <!-- Friend Functionality  -->
                                 <a class="dropdown-item"  href={% url "profile_view" user.slug %}>My Profile</a>    
-
-
+                                <a class="dropdown-item"  href={% url "notification_view" user.slug %}>Notifications</a> 
                           </span>
 
 
@@ -82,7 +80,7 @@
                     {% endif %}
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                  <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">{% block extended_nav %}{% endblock extended_nav %}</a>
                 </li>
               </ul>
                     <form class="form-inline my-2 my-lg-0 position-absolute top-50 end-0 ">

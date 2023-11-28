@@ -24,16 +24,6 @@
         </div>
     </div>
     
-     <!--Display Requester and DateTime of Requests -->
-     {% for Detail in frequest_record %}
-
-        <!--Directs To Friend Options - Remove Friend-->
-        <div>
-            <a href = '#'> {{friend.user.username}} </a>
-        </div>
-     
-     {% endfor %}
-
      {% else %}
         <i class="fas fa-h3    ">This request is no longer active</i>
      {% endif %}
