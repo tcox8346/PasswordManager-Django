@@ -1,0 +1,17 @@
+The Server hosting this solution must have :
+
+A webserver that allows traffic throught the generic ports of 80, 443 and outgoing traffic through 587.
+A SSL/TLS certificate to enable https traffic
+A SQL Database - mysql is assumed
+    Server Title as DjangoServer
+    username as Django-CredentialService
+    Password as DjangoWebServerAccessCode 
+    Port number as 3306
+    -- These values are found in config/settings.py and can be changed to fit the values of an already existings database.
+Environment variables initialized - use the file enviorment.env to get and store the values with the required names
+
+Inside the config/settings.py 
+    - read the comments to understand the things that can be removed and their purpose.
+
+This solution requires a minimum python version of 3.8, but python 3.10 is the assumed version for operation.
+If you are using python 3.10 and an error occurs that has to do with accessing a module named collections, update setuptools via pip --upgrade setuptools

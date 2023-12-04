@@ -1,0 +1,43 @@
+The purpose of this app is to facilitate the generation and checking of passwords.
+
+Common use cases: 
+    1: Generating a human memorable password using a set of base words along with a random number of numeral and special characters.
+    2: Determining if a password meets desired standards by comparing its character values with a criteria map. An example is a criterea that a password must be over x characters in length, and have y special characters at minimum.
+    
+Core Classes:
+    This app relies on one model with four peices of information
+        Dictionary - CoreWords that are used raw, or converted into their antynomal or syninnomal forms
+        Requirements - User defined restricitons, defined from a set of predefined options
+        Special Requirments - Time limitations
+        Owner - Account related to Password recommendation
+
+
+Information to note:
+    Functionality of adding-removing words from core
+        The webpage that displays the users password generation configuration must allow for users to select to remove specific words
+            The user must not be redirected to a new page when changing configuration unless they are adding new words to the list or core words (Possible usage of AJAX for dynamic webpage element population)
+            The user is directed to a form page that details the word they wish to add
+
+
+Apps and Notes:
+    PasswordGenerator app - this should handle all aspects of generating passwords. This includes recieving user input in defining what words they wish to use as a basis for their passwords and displaying webpages related to a users password generation preferences.
+        Webpages - 
+            Homepage - this page acts as the main hub for viewing and updating a users password preferences
+                Deletewordpage - this page acts as a form that enables users to select a word that they wish to delete from their core set of words
+                                - this page is not navigated to by user but automatically submitted with the required information when a user selects a delete word button via the homepage
+                Addwordpage - this page is a form that enables used to add a word to a list of used words
+                            - this page is navigated to by the user and is determined as valid if the word provided by the user isnt already part of the users known words
+
+Version Notes:
+    Version 0.00.1
+        Basic Authentication Controls defined - 
+                    User Login and registration (user is provided a activation token upon registration which acts as their portal to logging in, user must change password on initial login)
+                    Password Change defined
+        Basic Forum controls defined
+            Forum Post
+            Forum Post Comment
+        Basic Credential management defined
+            User Credential Records
+        Basic Password Generation Defined
+            Add Word To DIctionary
+            

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block Title %} Registration Page {% endblock Title %}
+
+
+{% block Body %}
+<form method = 'post'>
+    {% csrf_token %}
+    {{form.as_p}}
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+    {% endblock Body %}
+
+{% block Foot %}
+
+<div> 
+    <nav>
+        <p> Already have an account? <h3> <a href = '{% url "login" %}'> Log in </a> </h3> </p>
+     </nav>
+</div>
+<div> 
+    <nav>
+        <p> Issues Login into your account? <h3> <a href = '{% url "password_reset_view" %}'> Reset it now </a> </h3> </p>
+     </nav>
+</div>
+
+{% endblock Foot %}
