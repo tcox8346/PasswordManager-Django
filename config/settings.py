@@ -22,19 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-469=ewrtbr4oaxg3-il^ueozd5&o3k3-608p9gw=7=k$7=-79q'
 
-# Cryptographic variables - custom fernet implementation
-FERNET = b'wYZlyHsW-Qyq_h_2nw8Vjv6Quhoe1sBECrgDfS6xI2E='.decode()
+# Cryptographic variables
 os.environ["SECRET"] = SECRET_KEY
-os.environ["Fernet"] = FERNET
 
-# change when implementing enviorment key
-#from dotenv import load_dotenv, find_dotenv
-#load_dotenv(find_dotenv())
-#SECRET_KEY = os.environ['SECRET_KEY']
+
+
 
 # SECURITY WARNING: don't run with debug turned on in production! -Disable on production
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = False
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
